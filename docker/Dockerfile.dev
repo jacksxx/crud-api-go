@@ -1,0 +1,23 @@
+# Usa a imagem oficial do Golang
+FROM golang:1.23.4-alpine
+
+# Define o diretório de trabalho dentro do contêiner
+WORKDIR /app
+
+# Create directories with proper permissions
+RUN mkdir -p /app/tmp && \
+    chmod 777 /app/tmp
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Copia os arquivos do projeto para o contêiner
+COPY . .
+
+# Baixa as dependências do Go
+RUN go mod tidy
+
+# Compila o código Go
+RUN go build -o main ./cmd
+
+# Define o comando que será executado quando o contêiner iniciar
+CMD ["/app/main"]
