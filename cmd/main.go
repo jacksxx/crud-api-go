@@ -3,6 +3,7 @@ package main
 import (
 	"crud-api-go/arch/controller"
 	"crud-api-go/arch/repository"
+	"crud-api-go/arch/router"
 	"crud-api-go/arch/service"
 	"crud-api-go/config"
 	"fmt"
@@ -28,9 +29,8 @@ func main() {
 	//
 	ProductRepository := repository.NewProductRepository(dbConnection)
 	ProductService := service.NewProductService(ProductRepository)
-	ProductController := controller.NewProductController(ProductService)	
-
-	server.GET("/products", ProductController.GetProducts)
+	ProductController := controller.NewProductController(ProductService)
+	router.ProductsRouter(server, ProductController)
 
 	server.Logger.Fatal(server.Start(":8000"))
 }
