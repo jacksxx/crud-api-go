@@ -12,5 +12,7 @@ INSERT INTO
 VALUES
     ('Biscoito', 3.50),
     ('Banana', 2.00),
+    ('Pipoca', 1.59),
     ('BK Whopper', 6.90),
+    ('Pizza', 5.55),
     ('MC Big Mac', 5.99);
