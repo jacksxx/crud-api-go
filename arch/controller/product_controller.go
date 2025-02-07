@@ -25,13 +25,23 @@ func NewProductController(service service.ProductService) ProductController {
 // GetProducts lida com requisições GET para buscar todos os produtos.
 
 func (p *ProductController) GetProducts(ctx echo.Context) error {
-	// Chama o serviço para obter a lista de produtos.
-	products, err := p.ProductService.GetProducts()
+	// Inicializa os filtros
+	var filters model.ProductFilters
+	
+	// Faz o binding dos parâmetros da query para a struct `filters`
+	err := ctx.Bind(&filters)	
 	if err != nil {
-		// Retorna erro 500 caso a busca falhe.
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return ctx.JSON(http.StatusBadRequest, map[string]string{"error": "Parâmetros inválidos"})
 	}
-	// Retorna os produtos encontrados com status 200 (OK).
+
+	// Chama o serviço para obter os produtos, passando os filtros
+	products, err := p.ProductService.GetProducts(filters)
+	if err != nil {
+		// Retorna erro 500 caso a busca falhe
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	// Retorna os produtos encontrados com status 200 (OK)
 	return ctx.JSON(http.StatusOK, products)
 }
 

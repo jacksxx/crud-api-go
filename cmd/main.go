@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	// Carrega a configuração do banco de dados
 	config.LoadConfig()
 	checkDB := config.GetDBConfig()
 	fmt.Printf(
@@ -20,17 +21,28 @@ func main() {
 		checkDB.Host, checkDB.Port, checkDB.User, checkDB.DBName, checkDB.Password, checkDB.SSLMode,
 	)
 	fmt.Println(time.Now())
+
+	// Conecta ao banco de dados
 	dbConnection, err := config.Connect()
 	if err != nil {
 		panic(err)
 	}
 	defer dbConnection.Close()
+
+	// Cria a instância do Echo
 	server := echo.New()
-	//
+
+	// Define a base da API
+	baseRouter := "/api/v1"
+
+	// Inicializa repositórios, serviços e controllers
 	ProductRepository := repository.NewProductRepository(dbConnection)
 	ProductService := service.NewProductService(ProductRepository)
 	ProductController := controller.NewProductController(ProductService)
-	router.ProductsRouter(server, ProductController)
 
+	// Configura as rotas com baseRouter
+	router.ProductsRouter(server, baseRouter+"/products", ProductController)
+
+	// Inicia o servidor na porta 8000
 	server.Logger.Fatal(server.Start(":8000"))
 }

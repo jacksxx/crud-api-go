@@ -4,6 +4,7 @@ import (
 	"crud-api-go/arch/model"
 	"database/sql"
 	"fmt"
+	"strings"
 )
 
 // ProductRepository representa a estrutura do repositório de produtos, armazenando a conexão com o banco de dados
@@ -19,32 +20,63 @@ func NewProductRepository(connection *sql.DB) ProductRepository {
 }
 
 // GetProducts busca todos os produtos no banco de dados e retorna uma lista de produtos
-func (pr *ProductRepository) GetProducts() ([]model.Product, error) {
-	// Query SQL para selecionar os produtos da tabela
+func (pr *ProductRepository) GetProducts(filters model.ProductFilters) ([]model.Product, error) {
+	// Inicia a query base
 	query := `SELECT products_id, products_name, products_price FROM prod.products`
-	rows, err := pr.connection.Query(query) // Executa a consulta no banco de dados
-	if err != nil {
-		fmt.Println(err)              // Log do erro
-		return []model.Product{}, err // Retorna um array vazio e o erro
+	var conditions []string
+	var args []interface{}
+	argIndex := 1
+
+	// Adiciona filtro por nome, se fornecido
+	if filters.Name != "" {
+		conditions = append(conditions, fmt.Sprintf("products_name ILIKE $%d", argIndex))
+		args = append(args, "%"+filters.Name+"%")
+		argIndex++
 	}
+
+	// Adiciona as condições à query, se houver filtros
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Adiciona a ordenação por nome ascendente
+	query += " ORDER BY products_name ASC"
+
+	// Aplicar paginação (LIMIT e OFFSET)
+	if filters.Limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, filters.Limit)
+		argIndex++
+	}
+	if filters.Page > 0 {
+		offset := (filters.Page - 1) * filters.Limit
+		query += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, offset)
+	}
+
+	// Executa a consulta no banco de dados
+	rows, err := pr.connection.Query(query, args...)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close() // Garante que o cursor do banco será fechado após o uso
 
 	// Lista para armazenar os produtos retornados
 	var productList []model.Product
-	var productObj model.Product
 
 	// Itera sobre os resultados da consulta
 	for rows.Next() {
-		// Faz o scan dos dados do banco para o objeto productObj
-		err = rows.Scan(&productObj.Id, &productObj.Name, &productObj.Price)
+		var product model.Product
+		err = rows.Scan(&product.Id, &product.Name, &product.Price)
 		if err != nil {
-			fmt.Println(err)              // Log do erro
-			return []model.Product{}, err // Retorna um array vazio e o erro
+			fmt.Println(err)
+			return nil, err
 		}
-		// Adiciona o produto à lista de produtos
-		productList = append(productList, productObj)
+		productList = append(productList, product)
 	}
-	rows.Close()            // Fecha o cursor do banco de dados
-	return productList, nil // Retorna a lista de produtos e nil para indicar ausência de erro
+
+	return productList, nil
 }
 
 // GetProductByID busca um produto específico pelo ID no banco de dados
@@ -115,7 +147,7 @@ func (pr *ProductRepository) DeleteProduct(id int) error {
 	query, err := pr.connection.Prepare("DELETE FROM prod.products WHERE products_id = $1")
 	if err != nil {
 		fmt.Println(err) // Log do erro
-		return err // Retorna erro caso a preparação da query falhe
+		return err       // Retorna erro caso a preparação da query falhe
 	}
 	defer query.Close() // Garante que a query será fechada após a execução
 
@@ -123,7 +155,7 @@ func (pr *ProductRepository) DeleteProduct(id int) error {
 	_, err = query.Exec(id)
 	if err != nil {
 		fmt.Println(err) // Log do erro
-		return err // Retorna erro caso ocorra uma falha na exclusão
+		return err       // Retorna erro caso ocorra uma falha na exclusão
 	}
 	return nil // Retorna nil para indicar sucesso na exclusão
 }

@@ -19,8 +19,8 @@ func NewProductService(repository repository.ProductRepository) ProductService {
 }
 
 // GetProducts busca todos os produtos do repositório e retorna uma lista de produtos.
-func (p *ProductService) GetProducts() ([]model.Product, error) {
-	return p.ProductRepository.GetProducts()
+func (p *ProductService) GetProducts(filters model.ProductFilters) ([]model.Product, error) {
+	return p.ProductRepository.GetProducts(filters)
 }
 
 // GetProductByID busca um produto pelo ID no repositório.

@@ -6,11 +6,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func ProductsRouter(ctx *echo.Echo, productsController controller.ProductController) {
+func ProductsRouter(ctx *echo.Echo, baseRouter string, productsController controller.ProductController) {
 
-	ctx.GET("/products", productsController.GetProducts)
-	ctx.GET("products/:id", productsController.GetProductByID)
-	ctx.POST("/product", productsController.CreateProducts)
-	ctx.PATCH("product/:id", productsController.UpdateProducts)
-	ctx.DELETE("product/:id", productsController.DeleteProduct)
+	prodRouter := ctx.Group(baseRouter)
+
+	prodRouter.GET("", productsController.GetProducts)
+	prodRouter.GET("/:id", productsController.GetProductByID)
+	prodRouter.POST("", productsController.CreateProducts)
+	prodRouter.PATCH("/:id", productsController.UpdateProducts)
+	prodRouter.DELETE("/:id", productsController.DeleteProduct)
 }
