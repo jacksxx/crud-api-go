@@ -34,25 +34,27 @@ func (ps *ProductService) GetProductByID(id int) (*model.Product, error) {
 
 // CreateProducts recebe um produto e o insere no banco de dados.
 func (ps *ProductService) CreateProducts(product model.Product) (model.Product, error) {
-	// Chama o repositório para criar um novo produto e retorna o ID gerado.
-	productId, err := ps.ProductRepository.CreateProducts(product)
+	// Chama o repositório para criar um novo produto e retorna o ID gerado e o nome da categoria.
+	productId, categoriaName, err := ps.ProductRepository.CreateProducts(product)
 	if err != nil {
 		return model.Product{}, err // Retorna erro caso a inserção falhe.
 	}
 
-	// Atualiza o ID do produto criado para retornar no response.
+	// Atualiza os valores do produto criado.
 	product.Id = productId
+	product.Categoria_Name = categoriaName // Atualiza o nome da categoria
 
-	return product, nil // Retorna o produto criado com o ID atualizado.
+	return product, nil // Retorna o produto criado com ID e nome da categoria.
 }
 
 // UpdateProducts recebe um produto e atualiza seus dados no banco de dados.
 func (ps *ProductService) UpdateProducts(product model.Product) (model.Product, error) {
-	_, err := ps.ProductRepository.UpdateProducts(product) // Chama o repositório para atualizar o produto.
+	updatedProduct, err := ps.ProductRepository.UpdateProducts(product) // Chama o repositório para atualizar o produto.
 	if err != nil {
 		return model.Product{}, err // Retorna erro caso a atualização falhe.
 	}
-	return product, nil // Retorna o produto atualizado.
+
+	return updatedProduct, nil // Retorna o produto atualizado.
 }
 
 func (ps *ProductService) DeleteProduct(id int) error {
