@@ -3,10 +3,29 @@ CREATE SCHEMA IF NOT EXISTS prod;
 SET
     timezone = 'America/Bahia';
 
+-- Função para atualizar a data de modificação (data_atualizacao)
+CREATE OR REPLACE FUNCTION atualizar_data_atualizacao() 
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Atualiza a data de modificação apenas para tabelas que têm a coluna *_data_atualizacao
+    IF TG_TABLE_NAME = 'prod.categorias' THEN
+        NEW.categorias_data_atualizacao := CURRENT_TIMESTAMP;
+    ELSIF TG_TABLE_NAME = 'prod.products' THEN
+        NEW.products_data_atualizacao := CURRENT_TIMESTAMP;
+    -- Adicione mais condições para outras tabelas conforme necessário
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
 CREATE TABLE
     IF NOT EXISTS prod.categorias (
         categorias_id SERIAL PRIMARY KEY,
-        categorias_name VARCHAR(200) NOT NULL
+        categorias_name VARCHAR(200) NOT NULL,
+        categorias_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        categorias_data_atualizacao TIMESTAMP NULL
     );
 
 -- Inserindo as categorias
@@ -27,10 +46,10 @@ CREATE TABLE
         products_id SERIAL PRIMARY KEY,
         products_name VARCHAR(50) NOT NULL,
         products_price DECIMAL(10, 2) NOT NULL,
-        data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        categorias_id INT NOT NULL,
-        categorias_name VARCHAR(200) NOT NULL,
-        FOREIGN KEY (categorias_id) REFERENCES prod.categorias (categorias_id) ON DELETE CASCADE
+        products_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        products_data_atualizacao TIMESTAMP NULL,
+        categorias_id INT NOT NULL REFERENCES prod.categorias (categorias_id) ON DELETE CASCADE,
+        categorias_name VARCHAR(200) NOT NULL
     );
 
 -- Inserindo os produtos com categorias
@@ -148,3 +167,14 @@ VALUES
         8,
         'Produtos de Limpeza'
     );
+
+
+-- Trigger para a tabela prod.categorias
+CREATE TRIGGER atualizar_categoria
+BEFORE UPDATE ON prod.categorias
+FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao();
+
+-- Trigger para a tabela prod.products
+CREATE TRIGGER atualizar_product
+BEFORE UPDATE ON prod.products
+FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao();

@@ -3,12 +3,29 @@ package model
 import "time"
 
 type Product struct {
-	Id             int       `json:"id" db:"products_id" `
+	Id               int        `json:"id" db:"products_id"`
+	Name             string     `json:"name" db:"products_name"`
+	Price            float64    `json:"price" db:"products_price"`
+	Categoria_Id     int        `json:"categorias_id" db:"categorias_id"`
+	Categoria_Name   string     `json:"categoria_name" db:"categorias_name"`
+	Data_Cadastro    time.Time  `json:"data_cadastro" db:"products_data_cadastro"`
+	Data_Atualizacao *time.Time `json:"data_atualizacao" db:"products_data_atualizacao"`
+}
+
+type ProductPost struct {
+	Id             int       `json:"id" db:"products_id"`
 	Name           string    `json:"name" db:"products_name"`
 	Price          float64   `json:"price" db:"products_price"`
 	Categoria_Id   int       `json:"categorias_id" db:"categorias_id"`
-	Categoria_Name string    `json:"categoria_name" db:"categorias_name"`
-	Data_Cadastro  time.Time `json:"data_cadastro" db:"data_cadastro"`
+	Categoria_Name string    `json:"categoria_name" db:"categorias_name"`	
+}
+
+type ProductUpdate struct {
+	Id               int        `json:"id" db:"products_id"`
+	Name             string     `json:"name" db:"products_name"`
+	Price            float64    `json:"price" db:"products_price"`
+	Categoria_Id     int        `json:"categorias_id" db:"categorias_id"`
+	Categoria_Name   string     `json:"categoria_name" db:"categorias_name"`	
 }
 
 type ProductFilters struct {
