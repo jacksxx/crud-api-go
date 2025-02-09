@@ -51,20 +51,15 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-
+	
 	query += " ORDER BY products_name ASC"
 
-	if filters.Limit > 0 {
-		query += fmt.Sprintf(" LIMIT $%d", argIndex)
-		args = append(args, filters.Limit)
-		argIndex++
-	}
+	limit := max(filters.Limit, 1)
+	page := max(filters.Page, 1)
+	offset := (page - 1) * limit
 
-	if filters.Page > 0 {
-		offset := (filters.Page - 1) * filters.Limit
-		query += fmt.Sprintf(" OFFSET $%d", argIndex)
-		args = append(args, offset)
-	}
+	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
+	args = append(args, limit, offset)
 
 	rows, err := pr.connection.Query(query, args...)
 	if err != nil {

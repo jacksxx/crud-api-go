@@ -1,14 +1,26 @@
 # Usa a imagem oficial do Golang
-FROM golang:1.23.4-alpine
+FROM golang:1.23.6-alpine
 
 # Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
+# Add git and build dependencies
+RUN apk add --no-cache git gcc musl-dev
+
 # Create directories with proper permissions
 RUN mkdir -p /app/tmp && \
     chmod 777 /app/tmp
+
+# Install Air
+RUN go install github.com/air-verse/air@latest
+
 # Copy go mod files
 COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy Air config
+COPY .air.toml .
+
 
 # Copia os arquivos do projeto para o contêiner
 COPY . .
@@ -16,8 +28,9 @@ COPY . .
 # Baixa as dependências do Go
 RUN go mod tidy
 
-# Compila o código Go
-RUN go build -o main ./cmd
+# Exclui o build prévio para permitir que o Air rode corretamente
+RUN rm -f main
 
+EXPOSE 8000
 # Define o comando que será executado quando o contêiner iniciar
-CMD ["/app/main"]
+CMD ["air", "-c", ".air.toml"]

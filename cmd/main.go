@@ -39,9 +39,12 @@ func main() {
 	ProductRepository := repository.NewProductRepository(dbConnection)
 	ProductService := service.NewProductService(ProductRepository)
 	ProductController := controller.NewProductController(ProductService)
-
-	// Configura as rotas com baseRouter
 	router.ProductsRouter(server, baseRouter+"/products", ProductController)
+
+	CategoryRepository := repository.NewCategoriasRepository(dbConnection)
+	CategoryService := service.NewCategoriaService(CategoryRepository)
+	CategoryController := controller.NewCategoriaController(CategoryService)
+	router.CategoriesRouter(server, baseRouter+"/categories", CategoryController)
 
 	// Inicia o servidor na porta 8000
 	server.Logger.Fatal(server.Start(":8000"))
