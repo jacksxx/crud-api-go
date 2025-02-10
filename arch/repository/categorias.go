@@ -9,11 +9,12 @@ import (
 
 type CategoriasRepository interface {
 	GetCategorias(categorias model.CategoriasFilters) ([]model.Categorias, error)
-	GetCategoriasById(id int) (*model.Categorias, error)
+	GetCategoriasById(id int) (model.Categorias, error)
 	CreateCategorias(categorias model.CategoriasPost) (int, error)
 	UpdateCategoria(categorias model.CategoriasUpdate) (model.CategoriasUpdate, error)
 	DeleteCategoria(id int) error
-	ValidateCategoryName(nomeCategorias string) error
+	ValidateCategoryName(nomeCategorias string, categoriaId *int) error
+	CountCategories(filters model.CategoriasFilters) (int, error)
 }
 
 type categoriasRepository struct {
@@ -26,7 +27,6 @@ func NewCategoriasRepository(connection *sql.DB) CategoriasRepository {
 	}
 }
 
-// TODO: CORRIGIR FILTRO POR NOME
 func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) ([]model.Categorias, error) {
 	query := `SELECT categorias_id, categorias_name, categorias_data_cadastro, categorias_data_atualizacao FROM prod.categorias`
 	var conditions []string
@@ -47,13 +47,10 @@ func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) (
 	// Add ORDER BY clause
 	query += " ORDER BY categorias_name ASC "
 
-	// Set pagination
-	limit := max(filters.Limit, 1)
-	page := max(filters.Page, 1)
-	offset := (page - 1) * limit
+	offset := (filters.Page - 1) * filters.Limit
 
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
-	args = append(args, limit, offset)
+	args = append(args, filters.Limit, offset)
 
 	// Execute the query
 	rows, err := cr.connection.Query(query, args...)
@@ -75,11 +72,11 @@ func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) (
 	return categoriasList, nil
 }
 
-func (cr *categoriasRepository) GetCategoriasById(id int) (*model.Categorias, error) {
+func (cr *categoriasRepository) GetCategoriasById(id int) (model.Categorias, error) {
 	query, err := cr.connection.Prepare("SELECT * FROM prod.categorias WHERE categorias_id = $1")
 	if err != nil {
 		fmt.Println("Erro ao preparar consulta:", err)
-		return nil, err
+		return model.Categorias{}, err
 	}
 	defer query.Close()
 
@@ -90,14 +87,14 @@ func (cr *categoriasRepository) GetCategoriasById(id int) (*model.Categorias, er
 	if err != nil {
 		if err == sql.ErrNoRows {
 			fmt.Println("Nenhuma categoria encontrada com ID:", id)
-			return nil, nil
+			return model.Categorias{}, nil
 		}
 		fmt.Println("Erro na consulta ao banco de dados:", err) // Log do erro
-		return nil, err                                         // Retorna erro caso ocorra outro tipo de falha
+		return model.Categorias{}, err                          // Retorna erro caso ocorra outro tipo de falha
 	}
 	fmt.Println("Categoria encontrada:", categoria)
 
-	return &categoria, nil
+	return categoria, nil
 }
 
 func (cr *categoriasRepository) CreateCategorias(categorias model.CategoriasPost) (int, error) {
@@ -159,18 +156,54 @@ func (cr *categoriasRepository) DeleteCategoria(id int) error {
 	return nil
 }
 
-func (cs *categoriasRepository) ValidateCategoryName(nomeCategorias string) error {
+func (cr *categoriasRepository) ValidateCategoryName(nomeCategorias string, categoriaId *int) error {
 	var existingId int
 
-	// Verifica se a categoria já existe ignorando maiúsculas e minúsculas
-	err := cs.connection.QueryRow(`
-		SELECT categorias_id FROM prod.categorias WHERE categorias_name ILIKE $1
-	`, nomeCategorias).Scan(&existingId)
+	// Define a query para verificar se já existe uma categoria com o mesmo nome
+	// Utiliza ILIKE para fazer a comparação sem diferenciar maiúsculas e minúsculas
+	query := `SELECT categorias_id FROM prod.categorias WHERE categorias_name ILIKE $1`
+	args := []interface{}{nomeCategorias} // Parâmetro inicial da query (nome da categoria)
 
+	// Se for um update, adiciona uma condição para ignorar a própria categoria
+	if categoriaId != nil {
+		query += ` AND categorias_id <> $2` // Evita conflito com a própria categoria ao atualizar
+		args = append(args, *categoriaId)   // Adiciona o ID da categoria a ser ignorado nos argumentos da query
+	}
+
+	// Executa a query e tenta escanear o resultado no existingId
+	err := cr.connection.QueryRow(query, args...).Scan(&existingId)
+
+	// Se não houver erro ao escanear, significa que a categoria já existe
 	if err == nil {
 		return fmt.Errorf("categoria já existe")
 	}
 
+	// Se houver erro, mas não for devido a uma categoria existente, retorna nil (nenhum erro encontrado)
 	return nil
+}
 
+func (cr *categoriasRepository) CountCategories(filters model.CategoriasFilters) (int, error) {
+	query := `SELECT COUNT(*) FROM prod.categorias`
+	var conditions []string
+	var args []interface{}
+	argIndex := 1
+
+	if filters.Name != "" {
+		conditions = append(conditions, fmt.Sprintf("categorias_name ILIKE $%d", argIndex))
+		args = append(args, "%"+filters.Name+"%")
+		argIndex++
+	}
+
+	// Add any additional conditions to the WHERE clause
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	var count int
+	err := cr.connection.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

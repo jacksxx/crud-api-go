@@ -3,6 +3,7 @@ package controller
 import (
 	"crud-api-go/arch/model"
 	"crud-api-go/arch/service"
+	"crud-api-go/helper"
 	"net/http"
 	"strconv"
 
@@ -28,44 +29,38 @@ func NewCategoriaController(service service.CategoriaService) CategoriaControlle
 }
 
 func (cc *categoriaController) GetCategorias(ctx echo.Context) error {
-	var filters model.CategoriasFilters
+	filters := model.CategoriasFilters{}
 
 	err := ctx.Bind(&filters)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, map[string]string{"error:": "Parâmetros inválidos"})
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
-	categorias, err := cc.service.GetCategorias(filters)
+	categorias, _, err := cc.service.GetCategorias(filters)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error:": err.Error()})
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{err.Error()})
 	}
 
-	return ctx.JSON(http.StatusOK, categorias)
+	return helper.SuccessResponse(ctx, categorias)
 }
 
 func (cc *categoriaController) GetCategoriaByID(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
-		rsp := model.ResponseMessage("Id não pode ser nulo")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"O Id é obrigatório"})
 	}
 
 	categoriaId, err := strconv.Atoi(id)
 	if err != nil {
-		rsp := model.ResponseMessage("Id precisa ser um número")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"O Id da categoria inválido"})
 	}
 
-	categoria, err := cc.service.GetProductByID(categoriaId)
+	categoria, httpStatus, err := cc.service.GetProductByID(categoriaId)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	if categoria == nil {
-		rsp := model.ResponseMessage("Categoria não encontrada")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, httpStatus, nil, []string{err.Error()})
 	}
 
-	return ctx.JSON(http.StatusOK, categoria)
+	return helper.BuildResponse(ctx, httpStatus, categoria, nil)
 }
 
 func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
@@ -74,79 +69,75 @@ func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 
 	err := ctx.Bind(&categoria)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
-	err = cc.service.ValidateCategoryName(categoria.Name)
+	err = cc.service.ValidateCategoryName(categoria.Name, nil)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, model.ResponseMessage(err.Error()))
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
-	insertedCategories, err := cc.service.CreateCategorias(categoria)
+	insertedCategories, httpStatus, err := cc.service.CreateCategorias(categoria)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
-	return ctx.JSON(http.StatusCreated, insertedCategories)
+	return helper.BuildResponse(ctx, httpStatus, insertedCategories, nil)
 }
 
 func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
-		rsp := model.ResponseMessage("Id não pode ser nulo")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
 	}
 
 	categoriaId, err := strconv.Atoi(id)
 	if err != nil {
-		rsp := model.ResponseMessage("Id precisa ser um número")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
-	var categoria model.CategoriasUpdate
+	categoria := model.CategoriasUpdate{}
 	err = ctx.Bind(&categoria)
 	if err != nil {
 		// Retorna erro 400 caso o bind falhe.
-		return ctx.JSON(http.StatusBadRequest, model.ResponseMessage("Erro ao processar os dados"))
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
 	categoria.Id = categoriaId
 
-	err = cc.service.ValidateCategoryName(categoria.Name)
+	err = cc.service.ValidateCategoryName(categoria.Name, &categoriaId)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, model.ResponseMessage(err.Error()))
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
-	updatedCategoty, err := cc.service.UpdateCategorias(categoria)
+	updatedCategoty, httpStatus, err := cc.service.UpdateCategorias(categoria)
 	if err != nil {
 		// Retorna erro 500 caso a atualização falhe.
-		return ctx.JSON(http.StatusInternalServerError, model.ResponseMessage(err.Error()))
+		return helper.BuildResponse(ctx, httpStatus, nil, []string{err.Error()})
 	}
 
 	// Retorna o produto atualizado com status 200 (OK).
-	return ctx.JSON(http.StatusOK, updatedCategoty)
+	return helper.BuildResponse(ctx, httpStatus, updatedCategoty, nil)
 }
 
 func (cc *categoriaController) DeleteCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
-		rsp := model.ResponseMessage("Id não pode ser nulo")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
 	}
 
 	// Converte o ID de string para inteiro
 	categoriaId, err := strconv.Atoi(id)
 	if err != nil {
-		rsp := model.ResponseMessage("Id precisa ser um número válido")
-		return ctx.JSON(http.StatusBadRequest, rsp)
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
 	// Chama o serviço para excluir o produto
 	err = cc.service.DeleteCategorias(categoriaId)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, model.ResponseMessage("Erro ao deletar categoria"))
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar categoria"})
 	}
 
 	// Retorna resposta de sucesso
-	return ctx.JSON(http.StatusNoContent, nil)
+	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }

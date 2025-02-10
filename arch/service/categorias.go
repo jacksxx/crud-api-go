@@ -3,15 +3,18 @@ package service
 import (
 	"crud-api-go/arch/model"
 	"crud-api-go/arch/repository"
+	"fmt"
+	"math"
+	"net/http"
 )
 
 type CategoriaService interface {
-	GetCategorias(filters model.CategoriasFilters) ([]model.Categorias, error)
-	GetProductByID(id int) (*model.Categorias, error)
-	CreateCategorias(categorias model.CategoriasPost) (model.CategoriasPost, error)
-	UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, error)
+	GetCategorias(filters model.CategoriasFilters) (model.PaginatedResponse[model.Categorias], int, error)
+	GetProductByID(id int) (model.Categorias, int, error)
+	CreateCategorias(categorias model.CategoriasPost) (model.CategoriasPost, int, error)
+	UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, int, error)
 	DeleteCategorias(id int) error
-	ValidateCategoryName(nomeCategoria string) error
+	ValidateCategoryName(nomeCategoria string, categoriaId *int) error
 }
 
 type categoriaService struct {
@@ -24,38 +27,54 @@ func NewCategoriaService(repository repository.CategoriasRepository) CategoriaSe
 	}
 }
 
-func (cs *categoriaService) GetCategorias(filters model.CategoriasFilters) ([]model.Categorias, error) {
-	return cs.repository.GetCategorias(filters)
+func (cs *categoriaService) GetCategorias(filters model.CategoriasFilters) (model.PaginatedResponse[model.Categorias], int, error) {
+	categories, err := cs.repository.GetCategorias(filters)
+	if err != nil {
+		return model.PaginatedResponse[model.Categorias]{}, 0, fmt.Errorf("erro ao buscar categorias: %v", err)
+	}
+	total, err := cs.repository.CountCategories(filters)
+	if err != nil {
+		return model.PaginatedResponse[model.Categorias]{}, 0, fmt.Errorf("erro ao buscar quantidade de categorias: %v", err)
+	}
+	response := model.PaginatedResponse[model.Categorias]{
+		Total:      total,
+		Page:       filters.Page,
+		TotalPages: int(math.Ceil(float64(total) / float64(filters.Limit))),
+		Data:       categories,
+	}
+	return response, total, nil
 }
 
-func (cs *categoriaService) GetProductByID(id int) (*model.Categorias, error) {
+func (cs *categoriaService) GetProductByID(id int) (model.Categorias, int, error) {
 	categorias, err := cs.repository.GetCategoriasById(id)
 	if err != nil {
-		return nil, err
+		return model.Categorias{}, http.StatusInternalServerError, fmt.Errorf("erro ao buscar categoria: %v", err)
 	}
-
-	return categorias, nil
+	if categorias.Id == 0 {
+		return model.Categorias{}, http.StatusInternalServerError, fmt.Errorf("categoria não existe: %v", err)
+	}
+	return categorias, http.StatusOK, nil
 }
 
-func (cs *categoriaService) CreateCategorias(categorias model.CategoriasPost) (model.CategoriasPost, error) {
+func (cs *categoriaService) CreateCategorias(categorias model.CategoriasPost) (model.CategoriasPost, int, error) {
 
 	categoriaID, err := cs.repository.CreateCategorias(categorias)
 	if err != nil {
-		return model.CategoriasPost{}, err
+		return model.CategoriasPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar categoria: %v", err)
 	}
 
 	categorias.Id = categoriaID
 
-	return categorias, nil
+	return categorias, http.StatusOK, nil
 }
 
-func (cs *categoriaService) UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, error) {
+func (cs *categoriaService) UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, int, error) {
 
 	updatedCategories, err := cs.repository.UpdateCategoria(categorias)
 	if err != nil {
-		return model.CategoriasUpdate{}, err
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
 	}
-	return updatedCategories, nil
+	return updatedCategories, http.StatusOK, nil
 }
 
 func (cs *categoriaService) DeleteCategorias(id int) error {
@@ -66,8 +85,8 @@ func (cs *categoriaService) DeleteCategorias(id int) error {
 	return nil
 }
 
-func (cs *categoriaService) ValidateCategoryName(nomeCategoria string) error {
-	err := cs.repository.ValidateCategoryName(nomeCategoria)
+func (cs *categoriaService) ValidateCategoryName(nomeCategoria string, categoriaId *int) error {
+	err := cs.repository.ValidateCategoryName(nomeCategoria, categoriaId)
 	if err != nil {
 		return err
 	}
