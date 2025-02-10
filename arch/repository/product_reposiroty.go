@@ -10,11 +10,12 @@ import (
 // ProductRepository representa a estrutura do repositório de produtos, armazenando a conexão com o banco de dados
 type ProductRepository interface {
 	GetProducts(filters model.ProductFilters) ([]model.Product, error)
-	GetProductByID(id int) (*model.Product, error)
+	GetProductByID(id int) (model.Product, error)
 	CreateProducts(product model.ProductPost) (int, string, error)
 	UpdateProducts(product model.ProductUpdate) (model.ProductUpdate, error)
 	DeleteProduct(id int) error
 	ValidateCategory(categoriaId int) error
+	CountProducts(filters model.ProductFilters) (int, error)
 }
 
 // ProductRepository representa a estrutura do repositório de produtos, armazenando a conexão com o banco de dados
@@ -51,15 +52,13 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-	
+
 	query += " ORDER BY products_name ASC"
 
-	limit := max(filters.Limit, 1)
-	page := max(filters.Page, 1)
-	offset := (page - 1) * limit
+	offset := (filters.Page - 1) * filters.Limit
 
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
-	args = append(args, limit, offset)
+	args = append(args, filters.Limit, offset)
 
 	rows, err := pr.connection.Query(query, args...)
 	if err != nil {
@@ -81,12 +80,12 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 }
 
 // GetProductByID busca um produto específico pelo ID no banco de dados
-func (pr *productRepository) GetProductByID(id int) (*model.Product, error) {
+func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 	// Prepara a query SQL para evitar SQL Injection
 	query, err := pr.connection.Prepare("SELECT * FROM prod.products WHERE products_id = $1")
 	if err != nil {
 		fmt.Println("Erro ao preparar consulta:", err) // Log do erro
-		return nil, err                                // Retorna erro caso a preparação da query falhe
+		return model.Product{}, err                                // Retorna erro caso a preparação da query falhe
 	}
 	defer query.Close() // Fecha a consulta após execução
 
@@ -97,16 +96,16 @@ func (pr *productRepository) GetProductByID(id int) (*model.Product, error) {
 		// Log de erro caso a consulta falhe
 		if err == sql.ErrNoRows {
 			fmt.Println("Nenhum produto encontrado com o ID:", id) // Log caso não encontre produto
-			return nil, nil                                        // Retorna nil para indicar que o produto não foi encontrado
+			return model.Product{}, nil                                        // Retorna nil para indicar que o produto não foi encontrado
 		}
 		fmt.Println("Erro na consulta ao banco de dados:", err) // Log do erro
-		return nil, err                                         // Retorna erro caso ocorra outro tipo de falha
+		return model.Product{}, err                                         // Retorna erro caso ocorra outro tipo de falha
 	}
 
 	// Log do produto encontrado
 	fmt.Println("Produto encontrado:", product)
 
-	return &product, nil // Retorna o produto encontrado
+	return product, nil // Retorna o produto encontrado
 }
 
 // CreateProducts insere um novo produto no banco de dados e retorna o ID do produto inserido
@@ -198,4 +197,35 @@ func (pr *productRepository) ValidateCategory(categoriaId int) error {
 		return fmt.Errorf("categoria não encontrada") // Se count for 0, categoria não existe
 	}
 	return nil // Categoria existe
+}
+
+func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, error) {
+	query := `SELECT COUNT(*) FROM prod.products`
+	var conditions []string
+	var args []interface{}
+	argIndex := 1
+
+	if filters.Name != "" {
+		conditions = append(conditions, fmt.Sprintf("products_name ILIKE $%d", argIndex))
+		args = append(args, "%"+filters.Name+"%")
+		argIndex++
+	}
+
+	if filters.Categoria_Id > 0 {
+		conditions = append(conditions, fmt.Sprintf("categorias_id = $%d", argIndex))
+		args = append(args, filters.Categoria_Id)
+		argIndex++
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	var count int
+	err := pr.connection.QueryRow(query, args...).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
