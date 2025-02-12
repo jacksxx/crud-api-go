@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-playground/locales/pt_BR"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 )
 
@@ -31,6 +34,12 @@ func main() {
 
 	// Cria a instância do Echo
 	server := echo.New()
+	//Cria nova instancia de Validator
+	validate := validator.New()
+	// Cria nova instância do Universal Translator
+	ptLocale := pt_BR.New()
+	uni := ut.New(ptLocale, ptLocale)
+	translator, _ := uni.GetTranslator("pt")
 
 	// Define a base da API
 	baseRouter := "/api/v1"
@@ -43,7 +52,7 @@ func main() {
 
 	CategoryRepository := repository.NewCategoriasRepository(dbConnection)
 	CategoryService := service.NewCategoriaService(CategoryRepository)
-	CategoryController := controller.NewCategoriaController(CategoryService)
+	CategoryController := controller.NewCategoriaController(CategoryService, validate, translator)
 	router.CategoriesRouter(server, baseRouter+"/categories", CategoryController)
 
 	// Inicia o servidor na porta 8000
