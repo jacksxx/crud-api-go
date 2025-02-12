@@ -15,6 +15,7 @@ type CategoriaService interface {
 	UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, int, error)
 	DeleteCategorias(id int) error
 	ValidateCategoryName(nomeCategoria string, categoriaId *int) error
+	ValidateCategory(categoriaId int) error
 }
 
 type categoriaService struct {
@@ -87,6 +88,14 @@ func (cs *categoriaService) DeleteCategorias(id int) error {
 
 func (cs *categoriaService) ValidateCategoryName(nomeCategoria string, categoriaId *int) error {
 	err := cs.repository.ValidateCategoryName(nomeCategoria, categoriaId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cs *categoriaService) ValidateCategory(categoriaId int) error {
+	err := cs.repository.ValidateCategory(categoriaId)
 	if err != nil {
 		return err
 	}

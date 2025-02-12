@@ -2,6 +2,7 @@ package repository
 
 import (
 	"crud-api-go/arch/model"
+	"crud-api-go/helper"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -16,6 +17,7 @@ type ProductRepository interface {
 	DeleteProduct(id int) error
 	ValidateCategory(categoriaId int) error
 	CountProducts(filters model.ProductFilters) (int, error)
+	ValidateProduct(productId int) error
 }
 
 // ProductRepository representa a estrutura do repositório de produtos, armazenando a conexão com o banco de dados
@@ -85,7 +87,7 @@ func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 	query, err := pr.connection.Prepare("SELECT * FROM prod.products WHERE products_id = $1")
 	if err != nil {
 		fmt.Println("Erro ao preparar consulta:", err) // Log do erro
-		return model.Product{}, err                                // Retorna erro caso a preparação da query falhe
+		return model.Product{}, err                    // Retorna erro caso a preparação da query falhe
 	}
 	defer query.Close() // Fecha a consulta após execução
 
@@ -96,10 +98,10 @@ func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 		// Log de erro caso a consulta falhe
 		if err == sql.ErrNoRows {
 			fmt.Println("Nenhum produto encontrado com o ID:", id) // Log caso não encontre produto
-			return model.Product{}, nil                                        // Retorna nil para indicar que o produto não foi encontrado
+			return model.Product{}, nil                            // Retorna nil para indicar que o produto não foi encontrado
 		}
 		fmt.Println("Erro na consulta ao banco de dados:", err) // Log do erro
-		return model.Product{}, err                                         // Retorna erro caso ocorra outro tipo de falha
+		return model.Product{}, err                             // Retorna erro caso ocorra outro tipo de falha
 	}
 
 	// Log do produto encontrado
@@ -187,16 +189,7 @@ func (pr *productRepository) DeleteProduct(id int) error {
 
 // ValidateCategory verifica se a categoria existe no banco de dados.
 func (pr *productRepository) ValidateCategory(categoriaId int) error {
-	var count int
-	query := `SELECT COUNT(1) FROM prod.categorias WHERE categorias_id = $1`
-	err := pr.connection.QueryRow(query, categoriaId).Scan(&count)
-	if err != nil {
-		return err // Se houver erro ao consultar, retornamos o erro
-	}
-	if count == 0 {
-		return fmt.Errorf("categoria não encontrada") // Se count for 0, categoria não existe
-	}
-	return nil // Categoria existe
+	return helper.ValidateCategory(pr.connection, categoriaId)
 }
 
 func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, error) {
@@ -228,4 +221,7 @@ func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, e
 	}
 
 	return count, nil
+}
+func (pr *productRepository) ValidateProduct(productId int) error {
+	return helper.ValidateProduct(pr.connection, productId)
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"crud-api-go/arch/model"
+	"crud-api-go/helper"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -15,6 +16,7 @@ type CategoriasRepository interface {
 	DeleteCategoria(id int) error
 	ValidateCategoryName(nomeCategorias string, categoriaId *int) error
 	CountCategories(filters model.CategoriasFilters) (int, error)
+	ValidateCategory(categoriaId int) error
 }
 
 type categoriasRepository struct {
@@ -206,4 +208,9 @@ func (cr *categoriasRepository) CountCategories(filters model.CategoriasFilters)
 	}
 
 	return count, nil
+}
+
+// ValidateCategory verifica se a categoria existe no banco de dados.
+func (cr *categoriasRepository) ValidateCategory(categoriaId int) error {
+	return helper.ValidateCategory(cr.connection, categoriaId)
 }

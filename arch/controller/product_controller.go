@@ -169,6 +169,12 @@ func (pc *productController) DeleteProduct(ctx echo.Context) error {
 		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
+	err = pc.service.ValidateProduct(productId)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
+	}
+
 	// Chama o serviço para excluir o produto
 	err = pc.service.DeleteProduct(productId)
 	if err != nil {

@@ -15,6 +15,7 @@ type ProductService interface {
 	UpdateProducts(product model.ProductUpdate) (model.ProductUpdate, int, error)
 	DeleteProduct(id int) error
 	ValidateCategory(categoriaId int) error
+	ValidateProduct(productId int) error
 }
 
 // ProductService é responsável por interagir com o repositório e aplicar regras de negócio.
@@ -97,6 +98,14 @@ func (ps *productService) DeleteProduct(id int) error {
 
 func (ps *productService) ValidateCategory(categoriaId int) error {
 	err := ps.repository.ValidateCategory(categoriaId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ps *productService) ValidateProduct(productId int) error {
+	err := ps.repository.ValidateProduct(productId)
 	if err != nil {
 		return err
 	}

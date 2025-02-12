@@ -11,12 +11,12 @@ type Categorias struct {
 
 type CategoriasPost struct {
 	Id   int    `json:"id" db:"categorias_id"`
-	Name string `json:"nome" db:"categorias_name"`
+	Name string `json:"nome" db:"categorias_name" validate:"required,min=3,max=50"`
 }
 
 type CategoriasUpdate struct {
-	Id               int        `json:"id" db:"categorias_id"`
-	Name             string     `json:"nome" db:"categorias_name"`	
+	Id   int    `json:"id" db:"categorias_id"`
+	Name string `json:"nome" db:"categorias_name" validate:"required,min=3,max=50"`
 }
 
 type CategoriasFilters struct {
