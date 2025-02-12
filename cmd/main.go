@@ -47,7 +47,7 @@ func main() {
 	// Inicializa repositórios, serviços e controllers
 	ProductRepository := repository.NewProductRepository(dbConnection)
 	ProductService := service.NewProductService(ProductRepository)
-	ProductController := controller.NewProductController(ProductService)
+	ProductController := controller.NewProductController(ProductService, validate, translator)
 	router.ProductsRouter(server, baseRouter+"/products", ProductController)
 
 	CategoryRepository := repository.NewCategoriasRepository(dbConnection)

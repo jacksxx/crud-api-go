@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,13 +23,17 @@ type ProductController interface {
 // ProductController é responsável por lidar com as requisições HTTP relacionadas a produtos.
 type productController struct {
 	// ProductService contém a lógica de negócio e comunicação com o repositório.
-	service service.ProductService
+	service    service.ProductService
+	validate   *validator.Validate
+	translator ut.Translator
 }
 
 // NewProductController cria e retorna uma nova instância de ProductController.
-func NewProductController(service service.ProductService) ProductController {
+func NewProductController(service service.ProductService, validate *validator.Validate, translator ut.Translator) ProductController {
 	return &productController{
-		service: service,
+		service:    service,
+		validate:   validate,
+		translator: translator,
 	}
 }
 
@@ -84,15 +90,13 @@ func (pc *productController) CreateProducts(ctx echo.Context) error {
 	// Cria uma variável do tipo Product para armazenar os dados recebidos no corpo da requisição.
 	product := model.ProductPost{}
 
-	// Faz o bind dos dados da requisição para o objeto product.
-	err := ctx.Bind(&product)
-	if err != nil {
-		// Retorna erro 400 caso o bind falhe.
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
+	validationErrors := helper.BindAndValidate(ctx, pc.validate, &product, pc.translator)
+	if len(validationErrors) > 0 {
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, validationErrors)
+	}	
 
 	// Chama o serviço para verificar se a categoria existe
-	err = pc.service.ValidateCategory(product.Categoria_Id)
+	err := pc.service.ValidateCategory(product.Categoria_Id)
 	if err != nil {
 		// Retorna erro 400 caso o ID da categoria não exista
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
@@ -125,14 +129,18 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
+	err = pc.service.ValidateProduct(productId)
+	if err != nil {
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
+	}
+
 	// Cria uma variável do tipo Product para armazenar os dados recebidos no corpo da requisição.
 	product := model.ProductUpdate{}
 
 	// Faz o bind dos dados da requisição para o objeto product.
-	err = ctx.Bind(&product)
-	if err != nil {
-		// Retorna erro 400 caso o bind falhe.
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
+	validationErrors := helper.BindAndValidate(ctx, pc.validate, &product, pc.translator)
+	if len(validationErrors) > 0 {
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, validationErrors)
 	}
 
 	// Atribui o ID ao produto para garantir que estamos atualizando o item correto.
