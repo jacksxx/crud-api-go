@@ -17,7 +17,8 @@ type ProductController interface {
 	GetProductByID(ctx echo.Context) error
 	CreateProducts(ctx echo.Context) error
 	UpdateProducts(ctx echo.Context) error
-	DeleteProduct(ctx echo.Context) error
+	InactivateProduct(ctx echo.Context) error
+	ActivateProduct(ctx echo.Context) error
 }
 
 // ProductController é responsável por lidar com as requisições HTTP relacionadas a produtos.
@@ -93,7 +94,7 @@ func (pc *productController) CreateProducts(ctx echo.Context) error {
 	validationErrors := helper.BindAndValidate(ctx, pc.validate, &product, pc.translator)
 	if len(validationErrors) > 0 {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, validationErrors)
-	}	
+	}
 
 	// Chama o serviço para verificar se a categoria existe
 	err := pc.service.ValidateCategory(product.Categoria_Id)
@@ -164,7 +165,7 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedProduct, nil)
 }
 
-func (pc *productController) DeleteProduct(ctx echo.Context) error {
+func (pc *productController) InactivateProduct(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL
 	id := ctx.Param("id")
 	if id == "" {
@@ -184,7 +185,36 @@ func (pc *productController) DeleteProduct(ctx echo.Context) error {
 	}
 
 	// Chama o serviço para excluir o produto
-	err = pc.service.DeleteProduct(productId)
+	err = pc.service.InactivateProduct(productId)
+	if err != nil {
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar produto"})
+	}
+
+	// Retorna resposta de sucesso
+	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
+}
+
+func (pc *productController) ActivateProduct(ctx echo.Context) error {
+	// Obtém o ID do produto a partir dos parâmetros da URL
+	id := ctx.Param("id")
+	if id == "" {
+		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
+	}
+
+	// Converte o ID de string para inteiro
+	productId, err := strconv.Atoi(id)
+	if err != nil {
+		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
+	}
+
+	err = pc.service.ValidateProduct(productId)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
+	}
+
+	// Chama o serviço para excluir o produto
+	err = pc.service.ActivateProduct(productId)
 	if err != nil {
 		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar produto"})
 	}

@@ -13,7 +13,8 @@ type CategoriaService interface {
 	GetProductByID(id int) (model.Categorias, int, error)
 	CreateCategorias(categorias model.CategoriasPost) (model.CategoriasPost, int, error)
 	UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, int, error)
-	DeleteCategorias(id int) error
+	InactivateCategorias(id int) error
+	ActivateCategorias(id int) error
 	ValidateCategoryName(nomeCategoria string, categoriaId *int) error
 	ValidateCategory(categoriaId int) error
 }
@@ -78,8 +79,16 @@ func (cs *categoriaService) UpdateCategorias(categorias model.CategoriasUpdate) 
 	return updatedCategories, http.StatusOK, nil
 }
 
-func (cs *categoriaService) DeleteCategorias(id int) error {
-	err := cs.repository.DeleteCategoria(id)
+func (cs *categoriaService) InactivateCategorias(id int) error {
+	err := cs.repository.InactivateCategoria(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cs *categoriaService) ActivateCategorias(id int) error {
+	err := cs.repository.ActivateCategoria(id)
 	if err != nil {
 		return err
 	}

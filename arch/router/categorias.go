@@ -14,5 +14,7 @@ func CategoriesRouter(ctx *echo.Echo, baseRouter string, categoriesController co
 	catRouter.GET("/:id", categoriesController.GetCategoriaByID)
 	catRouter.POST("", categoriesController.CreateCategoria)
 	catRouter.PATCH("/:id", categoriesController.UpdateCategorias)
-	catRouter.DELETE("/:id", categoriesController.DeleteCategorias)
+	catRouter.PATCH("/inativar/:id", categoriesController.InactivateCategorias)
+	catRouter.PATCH("/ativar/:id", categoriesController.ActivateCategorias)
+
 }

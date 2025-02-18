@@ -17,7 +17,8 @@ type CategoriaController interface {
 	GetCategoriaByID(ctx echo.Context) error
 	CreateCategoria(ctx echo.Context) error
 	UpdateCategorias(ctx echo.Context) error
-	DeleteCategorias(ctx echo.Context) error
+	InactivateCategorias(ctx echo.Context) error
+	ActivateCategorias(ctx echo.Context) error
 }
 
 type categoriaController struct {
@@ -132,7 +133,7 @@ func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedCategoty, nil)
 }
 
-func (cc *categoriaController) DeleteCategorias(ctx echo.Context) error {
+func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
@@ -152,7 +153,35 @@ func (cc *categoriaController) DeleteCategorias(ctx echo.Context) error {
 	}
 
 	// Chama o serviço para excluir o produto
-	err = cc.service.DeleteCategorias(categoriaId)
+	err = cc.service.InactivateCategorias(categoriaId)
+	if err != nil {
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar categoria"})
+	}
+	// Retorna resposta de sucesso
+	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
+}
+
+func (cc *categoriaController) ActivateCategorias(ctx echo.Context) error {
+	id := ctx.Param("id")
+	if id == "" {
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
+	}
+
+	// Converte o ID de string para inteiro
+	categoriaId, err := strconv.Atoi(id)
+	if err != nil {
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
+	}
+
+	// Chama o serviço para verificar se a categoria existe
+	err = cc.service.ValidateCategory(categoriaId)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
+	}
+
+	// Chama o serviço para excluir o produto
+	err = cc.service.ActivateCategorias(categoriaId)
 	if err != nil {
 		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar categoria"})
 	}

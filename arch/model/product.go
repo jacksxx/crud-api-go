@@ -10,6 +10,8 @@ type Product struct {
 	Categoria_Name   string     `json:"categoria_name" db:"categorias_name"`
 	Data_Cadastro    time.Time  `json:"data_cadastro" db:"products_data_cadastro"`
 	Data_Atualizacao *time.Time `json:"data_atualizacao" db:"products_data_atualizacao"`
+	Data_Inativacao  *time.Time `json:"data_inativacao" db:"products_data_inativacao"`
+	Status           string     `json:"status" db:"products_status"`
 }
 
 type ProductPost struct {
@@ -31,6 +33,7 @@ type ProductUpdate struct {
 type ProductFilters struct {
 	Name         string `query:"name" db:"products_name:ILIKE:a"`
 	Categoria_Id int    `query:"categorias_id"`
+	Status       string `query:"status"`
 	Limit        int    `query:"limit" validate:"min=1"`
 	Page         int    `query:"page" validate:"min=1"`
 }

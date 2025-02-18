@@ -14,5 +14,6 @@ func ProductsRouter(ctx *echo.Echo, baseRouter string, productsController contro
 	prodRouter.GET("/:id", productsController.GetProductByID)
 	prodRouter.POST("", productsController.CreateProducts)
 	prodRouter.PATCH("/:id", productsController.UpdateProducts)
-	prodRouter.DELETE("/:id", productsController.DeleteProduct)
+	prodRouter.PATCH("/inativar/:id", productsController.InactivateProduct)
+	prodRouter.PATCH("/ativar/:id", productsController.ActivateProduct)
 }

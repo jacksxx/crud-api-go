@@ -13,7 +13,8 @@ type ProductService interface {
 	GetProductByID(id int) (model.Product, int, error)
 	CreateProducts(product model.ProductPost) (model.ProductPost, int, error)
 	UpdateProducts(product model.ProductUpdate) (model.ProductUpdate, int, error)
-	DeleteProduct(id int) error
+	InactivateProduct(id int) error
+	ActivateProduct(id int) error
 	ValidateCategory(categoriaId int) error
 	ValidateProduct(productId int) error
 }
@@ -87,9 +88,18 @@ func (ps *productService) UpdateProducts(product model.ProductUpdate) (model.Pro
 	return updatedProduct, http.StatusOK, nil // Retorna o produto atualizado.
 }
 
-func (ps *productService) DeleteProduct(id int) error {
+func (ps *productService) InactivateProduct(id int) error {
 	// Chama o repositório para excluir o produto
-	err := ps.repository.DeleteProduct(id)
+	err := ps.repository.InactivateProduct(id)
+	if err != nil {
+		return err // Retorna erro caso a exclusão falhe
+	}
+	return nil // Retorna nil para indicar sucesso na exclusão
+}
+
+func (ps *productService) ActivateProduct(id int) error {
+	// Chama o repositório para excluir o produto
+	err := ps.repository.ActivateProduct(id)
 	if err != nil {
 		return err // Retorna erro caso a exclusão falhe
 	}

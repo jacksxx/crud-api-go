@@ -13,7 +13,8 @@ type CategoriasRepository interface {
 	GetCategoriasById(id int) (model.Categorias, error)
 	CreateCategorias(categorias model.CategoriasPost) (int, error)
 	UpdateCategoria(categorias model.CategoriasUpdate) (model.CategoriasUpdate, error)
-	DeleteCategoria(id int) error
+	InactivateCategoria(id int) error
+	ActivateCategoria(id int) error
 	ValidateCategoryName(nomeCategorias string, categoriaId *int) error
 	CountCategories(filters model.CategoriasFilters) (int, error)
 	ValidateCategory(categoriaId int) error
@@ -30,7 +31,7 @@ func NewCategoriasRepository(connection *sql.DB) CategoriasRepository {
 }
 
 func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) ([]model.Categorias, error) {
-	query := `SELECT categorias_id, categorias_name, categorias_data_cadastro, categorias_data_atualizacao FROM prod.categorias`
+	query := `SELECT categorias_id, categorias_name, categorias_data_cadastro, categorias_data_atualizacao, categorias_data_inativacao, categorias_status FROM prod.categorias`
 	var conditions []string
 	var args []interface{}
 	argIndex := 1
@@ -38,6 +39,12 @@ func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) (
 	if filters.Name != "" {
 		conditions = append(conditions, fmt.Sprintf("categorias_name ILIKE $%d", argIndex))
 		args = append(args, "%"+filters.Name+"%")
+		argIndex++
+	}
+
+	if filters.Status != "" {
+		conditions = append(conditions, fmt.Sprintf("categorias_status = $%d", argIndex))
+		args = append(args, filters.Status)
 		argIndex++
 	}
 
@@ -65,7 +72,7 @@ func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) (
 	var categoriasList []model.Categorias
 	for rows.Next() {
 		var categoria model.Categorias
-		if err := rows.Scan(&categoria.Id, &categoria.Name, &categoria.Data_cadastro, &categoria.Data_atualizacao); err != nil {
+		if err := rows.Scan(&categoria.Id, &categoria.Name, &categoria.Data_cadastro, &categoria.Data_atualizacao, &categoria.Data_Inativacao, &categoria.Status); err != nil {
 			return nil, err
 		}
 		categoriasList = append(categoriasList, categoria)
@@ -84,7 +91,7 @@ func (cr *categoriasRepository) GetCategoriasById(id int) (model.Categorias, err
 
 	var categoria model.Categorias
 
-	err = query.QueryRow(id).Scan(&categoria.Id, &categoria.Name, &categoria.Data_cadastro, &categoria.Data_atualizacao)
+	err = query.QueryRow(id).Scan(&categoria.Id, &categoria.Name, &categoria.Data_cadastro, &categoria.Data_atualizacao, &categoria.Data_Inativacao, &categoria.Status)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -141,8 +148,33 @@ func (cr *categoriasRepository) UpdateCategoria(categorias model.CategoriasUpdat
 	return categorias, nil
 }
 
-func (cr *categoriasRepository) DeleteCategoria(id int) error {
-	query, err := cr.connection.Prepare("DELETE FROM prod.categorias WHERE categorias_id = $1")
+func (cr *categoriasRepository) InactivateCategoria(id int) error {
+	query, err := cr.connection.Prepare(`
+		UPDATE prod.categorias 
+		SET categorias_data_inativacao = CURRENT_TIMESTAMP, categorias_status = 'inativo' 
+		WHERE categorias_id = $1
+	`)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer query.Close()
+
+	_, err = query.Exec(id)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
+}
+
+func (cr *categoriasRepository) ActivateCategoria(id int) error {
+	query, err := cr.connection.Prepare(`
+		UPDATE prod.categorias 
+		SET categorias_data_inativacao = NULL, categorias_status = 'ativo' 
+		WHERE categorias_id = $1
+	`)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -193,6 +225,12 @@ func (cr *categoriasRepository) CountCategories(filters model.CategoriasFilters)
 	if filters.Name != "" {
 		conditions = append(conditions, fmt.Sprintf("categorias_name ILIKE $%d", argIndex))
 		args = append(args, "%"+filters.Name+"%")
+		argIndex++
+	}
+
+	if filters.Status != "" {
+		conditions = append(conditions, fmt.Sprintf("categorias_status = $%d", argIndex))
+		args = append(args, filters.Status)
 		argIndex++
 	}
 
