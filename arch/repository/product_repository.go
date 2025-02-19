@@ -68,7 +68,9 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 	query += " ORDER BY p.products_name ASC"
 
 	offset := (filters.Page - 1) * filters.Limit
-
+	if offset < 0 {
+		offset = 0
+	}
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
 	args = append(args, filters.Limit, offset)
 

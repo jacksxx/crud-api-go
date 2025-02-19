@@ -57,7 +57,9 @@ func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) (
 	query += " ORDER BY categorias_name ASC "
 
 	offset := (filters.Page - 1) * filters.Limit
-
+	if offset < 0 {
+		offset = 0
+	}
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argIndex, argIndex+1)
 	args = append(args, filters.Limit, offset)
 

@@ -147,8 +147,8 @@ CREATE TABLE
         lst_compras_itens_id SERIAL PRIMARY KEY,
         lst_compras_id INT NOT NULL REFERENCES prod.lst_compras (lst_compras_id) ON DELETE CASCADE,
         products_id INT NOT NULL REFERENCES prod.products (products_id) ON DELETE CASCADE,
-        lst_compras_itens_quantidade INT NOT NULL CHECK (lst_compras_itens_quantidade > 0),
-        lst_compras_itens_preco DECIMAL(10, 2) NOT NULL CHECK (lst_compras_itens_preco >= 0),
+        lst_compras_itens_quantidade INT NOT NULL CHECK (lst_compras_itens_quantidade > 0) DEFAULT 0,
+        lst_compras_itens_preco DECIMAL(10, 2) NOT NULL CHECK (lst_compras_itens_preco >= 0) DEFAULT 0,
         lst_compras_itens_comprado BOOLEAN NOT NULL DEFAULT FALSE,
         lst_compras_itens_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         lst_compras_itens_data_atualizacao TIMESTAMP NULL
