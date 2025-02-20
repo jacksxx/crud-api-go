@@ -55,6 +55,16 @@ func main() {
 	CategoryController := controller.NewCategoriaController(CategoryService, validate, translator)
 	router.CategoriesRouter(server, baseRouter+"/categories", CategoryController)
 
+	LstComprasItensRepository := repository.NewLstComprasItensRepository(dbConnection)
+	LstComprasItensService := service.NewLstComprasItensService(LstComprasItensRepository)
+	LstComprasItensController := controller.NewLstComprasItensController(LstComprasItensService, validate, translator)
+	router.LstComprasItensRouter(server, baseRouter+"/lst_compras_itens", LstComprasItensController)
+
+	LstComprasRepository := repository.NewLstComprasRepository(dbConnection)
+	LstComprasService := service.NewLstComprasService(LstComprasRepository)
+	LstComprasController := controller.NewLstComprasController(LstComprasService, validate, translator)
+	router.LstComprasRouter(server, baseRouter+"/lst_compras", LstComprasController)
+
 	// Inicia o servidor na porta 8000
 	server.Logger.Fatal(server.Start(":8000"))
 }

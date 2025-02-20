@@ -9,8 +9,8 @@ type LstCompras struct {
 	Qtd_Itens        int        `json:"qtd_itens" db:"lst_compras_total_itens"`
 	Status_Codigo    int        `json:"status_codigo" db:"lst_compras_status_id"`
 	Status           string     `json:"status" db:"lst_compras_status_name"`
-	Data_Cadastro    time.Time  `json:"data_cadastro" db:"lst_compras_itens_data_cadastro"`
-	Data_Atualizacao *time.Time `json:"data_atualizacao" db:"lst_compras_itens_data_atualizacao"`
+	Data_Cadastro    time.Time  `json:"data_cadastro" db:"lst_compras_data_cadastro"`
+	Data_Atualizacao *time.Time `json:"data_atualizacao" db:"lst_compras_data_atualizacao"`
 }
 
 type LstCompras_Post struct {
@@ -36,4 +36,6 @@ type LstCompras_Finish struct {
 type LstCompras_Filters struct {
 	Nome          string `query:"nome" db:"lst_compras_name:ILIKE:a"`
 	Status_Codigo int    `query:"status_codigo" db:"lst_compras_status_id"`
+	Limit         int    `query:"limit" validate:"min=1"`
+	Page          int    `query:"page" validate:"min=1"`
 }
