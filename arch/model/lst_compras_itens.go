@@ -17,6 +17,7 @@ type LstCompras_Itens struct {
 type LstCompras_Itens_Post struct {
 	Id            int     `json:"id" db:"lst_compras_itens_id"`
 	LstCompras_Id int     `json:"lst_compras_id" db:"lst_compras_id"`
+	Product_Name     string     `json:"product_name" db:"products_name"`
 	Product_Id    int     `json:"product_id" db:"products_id" validate:"required"`
 	Quantidade    int     `json:"quantidade" db:"lst_compras_itens_quantidade"`
 	Preco         float64 `json:"preco" db:"lst_compras_itens_preco"`

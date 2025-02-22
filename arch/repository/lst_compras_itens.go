@@ -9,9 +9,10 @@ import (
 )
 
 type LstComprasItensRepository interface {
+	BeginTransaction() (*sql.Tx, error)
 	GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error)
 	GetLstComprasItensById(id int) (model.LstCompras_Itens, error)
-	CreateLstComprasItem(item model.LstCompras_Itens_Post) (int, error)
+	CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (int, string, error)
 	ValidateProduct(productId int) error
 	UpdateLstComprasTotals(lstComprasId int) error
 }
@@ -24,6 +25,10 @@ func NewLstComprasItensRepository(connection *sql.DB) LstComprasItensRepository 
 	return &lstComprasItensRepository{
 		connection: connection,
 	}
+}
+
+func (r *lstComprasItensRepository) BeginTransaction() (*sql.Tx, error) {
+	return r.connection.Begin()
 }
 
 func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error) {
@@ -123,34 +128,56 @@ func (r *lstComprasItensRepository) GetLstComprasItensById(id int) (model.LstCom
 	return item, nil
 }
 
-func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_Itens_Post) (int, error) {
+func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (int, string, error) {
 	if item.LstCompras_Id == 0 {
-		return 0, fmt.Errorf("erro: LstCompras_Id inválido (0) ao inserir item")
+		return 0, "", fmt.Errorf("erro: LstCompras_Id inválido (0) ao inserir item")
 	}
 
 	var Id int
+	var ProductName string
 
+	// Inserindo o item na tabela lst_compras_itens e fazendo a junção com a tabela de produtos para pegar o nome do produto
 	query, err := r.connection.Prepare(`
 		INSERT INTO prod.lst_compras_itens (lst_compras_id, products_id, lst_compras_itens_quantidade, lst_compras_itens_preco)
 		VALUES ($1, $2, $3, $4)
-		RETURNING lst_compras_itens_id;
+		RETURNING lst_compras_itens_id
 	`)
 	if err != nil {
 		fmt.Println("Erro ao preparar a query:", err)
-		return 0, err
+		return 0, "", err
 	}
-
+	defer query.Close()
+	// Executando a inserção do item
 	err = query.QueryRow(item.LstCompras_Id, item.Product_Id, item.Quantidade, item.Preco).Scan(&Id)
 	if err != nil {
 		fmt.Println("Erro ao inserir item:", err)
-		return 0, err
+		return 0, "", err
 	}
 
-	return Id, nil
+	// Agora, realizando a junção para pegar o nome do produto usando o ID do produto inserido
+	queryGetProduct, err := r.connection.Prepare(`
+		SELECT p.products_name
+		FROM prod.products p
+		WHERE p.products_id = $1
+	`)
+	if err != nil {
+		fmt.Println("Erro ao preparar a consulta para pegar o nome do produto:", err)
+		return 0, "", err
+	}
+
+	// Executando a consulta para obter o nome do produto
+	err = queryGetProduct.QueryRow(item.Product_Id).Scan(&ProductName)
+	if err != nil {
+		fmt.Println("Erro ao obter o nome do produto:", err)
+		return 0, "", err
+	}
+
+	return Id, ProductName, nil
 }
 
 func (r *lstComprasItensRepository) ValidateProduct(productId int) error {
-	return helper.ValidateProduct(r.connection, productId)
+	tx, _ := r.BeginTransaction()
+	return helper.ValidateProduct(tx, productId)
 }
 
 func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int) error {

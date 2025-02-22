@@ -10,6 +10,7 @@ import (
 
 // ProductRepository representa a estrutura do repositório de produtos, armazenando a conexão com o banco de dados
 type ProductRepository interface {
+	BeginTransaction() (*sql.Tx, error)
 	GetProducts(filters model.ProductFilters) ([]model.Product, error)
 	GetProductByID(id int) (model.Product, error)
 	CreateProducts(product model.ProductPost) (int, string, error)
@@ -31,6 +32,10 @@ func NewProductRepository(connection *sql.DB) ProductRepository {
 	return &productRepository{
 		connection: connection,
 	}
+}
+
+func (r *productRepository) BeginTransaction() (*sql.Tx, error) {
+	return r.connection.Begin()
 }
 
 // GetProducts busca todos os produtos no banco de dados e retorna uma lista de produtos
@@ -296,5 +301,6 @@ func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, e
 }
 
 func (pr *productRepository) ValidateProduct(productId int) error {
-	return helper.ValidateProduct(pr.connection, productId)
+	tx, _ := pr.BeginTransaction()
+	return helper.ValidateProduct(tx, productId)
 }

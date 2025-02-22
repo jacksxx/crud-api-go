@@ -46,19 +46,31 @@ func (s *lstComprasItensService) GetLstComprasItensByID(id int) (model.LstCompra
 }
 
 func (s *lstComprasItensService) CreateLstComprasItens(Item model.LstCompras_Itens_Post) (model.LstCompras_Itens_Post, int, error) {
-	itemId, err := s.repository.CreateLstComprasItem(Item)
+	tx, err := s.repository.BeginTransaction()
+	if err != nil {
+		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback() // Garantir que a transação será revertida em caso de erro
+
+	itemId, productName, err := s.repository.CreateLstComprasItem(Item, tx)
+
 	if err != nil {
 		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar Item: %v", err)
 	}
 
 	Item.Id = itemId
-
+	Item.Product_Name = productName
 	// Atualizar os totais da lista de compras
 	err = s.repository.UpdateLstComprasTotals(Item.LstCompras_Id)
 	if err != nil {
+		tx.Rollback()
 		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar totais: %v", err)
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
+	}
 	return Item, http.StatusCreated, nil
 }
 

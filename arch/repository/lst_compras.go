@@ -8,10 +8,12 @@ import (
 )
 
 type LstComprasRepository interface {
+	BeginTransaction() (*sql.Tx, error)
 	GetLstCompras(filters model.LstCompras_Filters) ([]model.LstCompras, error)
 	GetLstComprasById(id int) (model.LstCompras, error)
-	CreateLstCompras(compras model.LstCompras_Post) (model.LstCompras_Post, error)
+	CreateLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
 	CountLstCompras(filters model.LstCompras_Filters) (int, error)
+	TotaisLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
 }
 
 type lstComprasRepository struct {
@@ -22,6 +24,9 @@ func NewLstComprasRepository(connection *sql.DB) LstComprasRepository {
 	return &lstComprasRepository{
 		connection: connection,
 	}
+}
+func (r *lstComprasRepository) BeginTransaction() (*sql.Tx, error) {
+	return r.connection.Begin()
 }
 
 func (r *lstComprasRepository) GetLstCompras(filters model.LstCompras_Filters) ([]model.LstCompras, error) {
@@ -112,7 +117,7 @@ func (r *lstComprasRepository) GetLstComprasById(id int) (model.LstCompras, erro
 	return compra, nil
 }
 
-func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post) (model.LstCompras_Post, error) {
+func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error) {
 	var Id int
 
 	query, err := r.connection.Prepare(`
@@ -124,7 +129,6 @@ func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post) (
 		fmt.Println(err)
 		return model.LstCompras_Post{}, err
 	}
-	
 
 	// Executa a query e escaneia o ID do item inserido
 	err = query.QueryRow(compras.Nome).Scan(&Id)
@@ -133,6 +137,7 @@ func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post) (
 		return model.LstCompras_Post{}, err
 	}
 	compras.Id = Id
+
 	return compras, nil
 }
 
@@ -165,4 +170,31 @@ func (r *lstComprasRepository) CountLstCompras(filters model.LstCompras_Filters)
 	}
 
 	return count, nil
+}
+
+func (r *lstComprasRepository) TotaisLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error) {
+	// Busca os totais atualizados (status, quantidade de itens, e preço total)
+
+	var status, totalItens int
+	var totalPreco float64
+
+	queryTotals, err := r.connection.Prepare(`
+		SELECT lst_compras_status_id, lst_compras_total_itens, lst_compras_valor_total
+		FROM prod.lst_compras
+		WHERE lst_compras_id = $1;
+	`)
+
+	if err != nil {
+		return model.LstCompras_Post{}, fmt.Errorf("erro ao preparar a consulta para buscar totais atualizados: %v", err)
+	}
+	err = queryTotals.QueryRow(compras.Id).Scan(&status, &totalItens, &totalPreco)
+	if err != nil {
+		return model.LstCompras_Post{}, fmt.Errorf("erro ao buscar totais atualizados: %v", err)
+	}
+	// Atualiza a resposta com os totais calculados
+	compras.Status_Codigo = status
+	compras.Qtd_Itens = totalItens
+	compras.Total = totalPreco
+
+	return compras, nil
 }
