@@ -61,7 +61,7 @@ func main() {
 	router.LstComprasItensRouter(server, baseRouter+"/lst_compras_itens", LstComprasItensController)
 
 	LstComprasRepository := repository.NewLstComprasRepository(dbConnection)
-	LstComprasService := service.NewLstComprasService(LstComprasRepository)
+	LstComprasService := service.NewLstComprasService(LstComprasRepository, LstComprasItensService)
 	LstComprasController := controller.NewLstComprasController(LstComprasService, validate, translator)
 	router.LstComprasRouter(server, baseRouter+"/lst_compras", LstComprasController)
 

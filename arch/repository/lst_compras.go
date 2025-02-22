@@ -9,6 +9,8 @@ import (
 
 type LstComprasRepository interface {
 	GetLstCompras(filters model.LstCompras_Filters) ([]model.LstCompras, error)
+	GetLstComprasById(id int) (model.LstCompras, error)
+	CreateLstCompras(compras model.LstCompras_Post) (model.LstCompras_Post, error)
 	CountLstCompras(filters model.LstCompras_Filters) (int, error)
 }
 
@@ -25,13 +27,11 @@ func NewLstComprasRepository(connection *sql.DB) LstComprasRepository {
 func (r *lstComprasRepository) GetLstCompras(filters model.LstCompras_Filters) ([]model.LstCompras, error) {
 	query := `
 		SELECT lc.lst_compras_id, lc.lst_compras_name, 
-		       SUM(i.lst_compras_itens_preco * i.lst_compras_itens_quantidade) AS lst_compras_valor_total,
-		       COUNT(i.products_id) AS lst_compras_total_itens,
+		       lc.lst_compras_valor_total, lc.lst_compras_total_itens,
 		       lc.lst_compras_status_id, sc.lst_compras_status_name, 
 		       lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao
 		FROM prod.lst_compras lc
-		JOIN prod.lst_compras_status sc ON lc.lst_compras_status_id = sc.lst_compras_status_id
-		LEFT JOIN prod.lst_compras_itens i ON lc.lst_compras_id = i.lst_compras_id`
+		JOIN prod.lst_compras_status sc ON lc.lst_compras_status_id = sc.lst_compras_status_id`
 
 	var conditions []string
 	var args []interface{}
@@ -52,7 +52,7 @@ func (r *lstComprasRepository) GetLstCompras(filters model.LstCompras_Filters) (
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-	query += " GROUP BY lc.lst_compras_id, lc.lst_compras_name, lc.lst_compras_status_id, sc.lst_compras_status_name, lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao"
+
 	query += " ORDER BY lc.lst_compras_id ASC"
 
 	// Paginação
@@ -80,6 +80,60 @@ func (r *lstComprasRepository) GetLstCompras(filters model.LstCompras_Filters) (
 
 	return compras, nil
 
+}
+
+func (r *lstComprasRepository) GetLstComprasById(id int) (model.LstCompras, error) {
+	query, err := r.connection.Prepare(`
+		SELECT lc.lst_compras_id, lc.lst_compras_name, 
+		       lc.lst_compras_valor_total, lc.lst_compras_total_itens,
+		       lc.lst_compras_status_id, sc.lst_compras_status_name, 
+		       lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao
+		FROM prod.lst_compras lc
+		JOIN prod.lst_compras_status sc ON lc.lst_compras_status_id = sc.lst_compras_status_id
+		WHERE lc.lst_compras_id = $1`)
+	if err != nil {
+		fmt.Println("Error ao preparar consulta:", err)
+		return model.LstCompras{}, err
+	}
+	defer query.Close()
+	var compra model.LstCompras
+
+	err = query.QueryRow(id).Scan(&compra.Id, &compra.Nome, &compra.Total, &compra.Qtd_Itens, &compra.Status_Codigo, &compra.Status, &compra.Data_Cadastro, &compra.Data_Atualizacao)
+	if err != nil {
+		// Log de erro caso a consulta falhe
+		if err == sql.ErrNoRows {
+			fmt.Println("Nenhum item encontrado com o ID:", id) // Log caso não encontre produto
+			return model.LstCompras{}, nil                      // Retorna nil para indicar que o produto não foi encontrado
+		}
+		fmt.Println("Erro na consulta ao banco de dados:", err) // Log do erro
+		return model.LstCompras{}, err                          // Retorna erro caso ocorra outro tipo de falha
+	}
+
+	return compra, nil
+}
+
+func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post) (model.LstCompras_Post, error) {
+	var Id int
+
+	query, err := r.connection.Prepare(`
+		INSERT INTO prod.lst_compras (lst_compras_name , lst_compras_status_id)
+		VALUES ($1, 1)
+		RETURNING lst_compras_id
+	`)
+	if err != nil {
+		fmt.Println(err)
+		return model.LstCompras_Post{}, err
+	}
+	
+
+	// Executa a query e escaneia o ID do item inserido
+	err = query.QueryRow(compras.Nome).Scan(&Id)
+	if err != nil {
+		fmt.Println(err)
+		return model.LstCompras_Post{}, err
+	}
+	compras.Id = Id
+	return compras, nil
 }
 
 func (r *lstComprasRepository) CountLstCompras(filters model.LstCompras_Filters) (int, error) {

@@ -11,8 +11,8 @@ func LstComprasRouter(ctx *echo.Echo, baseRouter string, lstComprasController co
 	prodRouter := ctx.Group(baseRouter)
 
 	prodRouter.GET("", lstComprasController.GetLstCompras)
-	// prodRouter.GET("/:id", lstComprasItensController.GetProductByID)
-	// prodRouter.POST("", lstComprasItensController.CreateProducts)
+	prodRouter.GET("/:id", lstComprasController.GetLstComprasByCodigo)
+	prodRouter.POST("", lstComprasController.PostAluguel)
 	// prodRouter.PATCH("/:id", lstComprasItensController.UpdateProducts)
 	// prodRouter.PATCH("/inativar/:id", lstComprasItensController.InactivateProduct)
 	// prodRouter.PATCH("/ativar/:id", lstComprasItensController.ActivateProduct)

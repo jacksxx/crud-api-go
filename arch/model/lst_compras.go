@@ -14,11 +14,12 @@ type LstCompras struct {
 }
 
 type LstCompras_Post struct {
-	Id   int    `json:"id" db:"lst_compras_id"`
-	Nome string `json:"nome" db:"lst_compras_name"`
-	// Total            float64            `json:"total" db:"lst_compras_valor_total"`
-	// Qtd_Itens        int                `json:"qtd_itens" db:"lst_compras_total_itens"`
-	LstCompras_Itens []LstCompras_Itens `json:"lstcompras_itens" validate:"required,dive"`
+	Id               int                     `json:"id" db:"lst_compras_id"`
+	Nome             string                  `json:"nome" db:"lst_compras_name"`
+	Status_Codigo    int                     `json:"status_codigo" db:"lst_compras_status_id"`
+	Total            float64                 `json:"total" db:"lst_compras_valor_total"`
+	Qtd_Itens        int                     `json:"qtd_itens" db:"lst_compras_total_itens"`
+	LstCompras_Itens []LstCompras_Itens_Post `json:"lstcompras_itens" validate:"required,dive"`
 }
 
 type LstCompras_Update struct {
