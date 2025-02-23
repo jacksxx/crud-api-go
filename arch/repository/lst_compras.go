@@ -14,6 +14,7 @@ type LstComprasRepository interface {
 	CreateLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
 	CountLstCompras(filters model.LstCompras_Filters) (int, error)
 	TotaisLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
+	VerificarExistenciaLstCompras(lstComprasId int, tx *sql.Tx) (bool, error)
 }
 
 type lstComprasRepository struct {
@@ -120,18 +121,13 @@ func (r *lstComprasRepository) GetLstComprasById(id int) (model.LstCompras, erro
 func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error) {
 	var Id int
 
-	query, err := r.connection.Prepare(`
+	query := `
 		INSERT INTO prod.lst_compras (lst_compras_name , lst_compras_status_id)
 		VALUES ($1, 1)
 		RETURNING lst_compras_id
-	`)
-	if err != nil {
-		fmt.Println(err)
-		return model.LstCompras_Post{}, err
-	}
-
+	`
 	// Executa a query e escaneia o ID do item inserido
-	err = query.QueryRow(compras.Nome).Scan(&Id)
+	err := tx.QueryRow(query, compras.Nome).Scan(&Id)
 	if err != nil {
 		fmt.Println(err)
 		return model.LstCompras_Post{}, err
@@ -197,4 +193,20 @@ func (r *lstComprasRepository) TotaisLstCompras(compras model.LstCompras_Post, t
 	compras.Total = totalPreco
 
 	return compras, nil
+}
+
+func (r *lstComprasRepository) VerificarExistenciaLstCompras(lstComprasId int, tx *sql.Tx) (bool, error) {
+	var exists bool
+
+	query := `SELECT EXISTS(SELECT 1 FROM prod.lst_compras WHERE lst_compras_id = $1)`
+
+	err := tx.QueryRow(query, lstComprasId).Scan(&exists)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // Retorna false se não encontrar a lista de compras
+		}
+		return false, fmt.Errorf("erro ao verificar existência da lista de compras: %v", err)
+	}
+
+	return exists, nil
 }

@@ -71,10 +71,21 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 	if err != nil {
 		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar lista de compra: %v", err)
 	}
+	fmt.Println("Lista criada com ID:", compras.Id) // <-- Debug
 
 	// Certificar-se de que a lista de compras foi realmente criada e tem um ID válido
 	if compras.Id == 0 {
+		tx.Rollback()
 		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
+	}
+
+	// Verificar se a lista de compras realmente existe antes de continuar
+	existe, err := s.repository.VerificarExistenciaLstCompras(compras.Id, tx)
+	if err != nil {
+		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro: %v", err)
+	}
+	if !existe {
+		return model.LstCompras_Post{}, http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", compras.Id)
 	}
 
 	var itensCriados []model.LstCompras_Itens_Post
@@ -83,22 +94,13 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 
 		// Criar o item dentro da transação
 		ItensCompras, httpStatus, err := s.itensComprasService.CreateLstComprasItens(material)
-		if err != nil {
-			// Se houver erro, fazer o rollback da transação
-			tx.Rollback()
+		if err != nil {			
 			return model.LstCompras_Post{}, http.StatusInternalServerError, err
 		}
 
 		if httpStatus != http.StatusCreated {
 			tx.Rollback()
 			return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar item de compra")
-		}
-
-		// Validar o produto
-		err = s.itensComprasService.ValidateProduct(ItensCompras.Product_Id)
-		if err != nil {
-			tx.Rollback()
-			return model.LstCompras_Post{}, http.StatusInternalServerError, err
 		}
 
 		// Adicionar o item à lista

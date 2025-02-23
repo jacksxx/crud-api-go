@@ -15,6 +15,7 @@ type LstComprasItensRepository interface {
 	CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (int, string, error)
 	ValidateProduct(productId int) error
 	UpdateLstComprasTotals(lstComprasId int) error
+	CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error)
 }
 
 type lstComprasItensRepository struct {
@@ -137,36 +138,27 @@ func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_I
 	var ProductName string
 
 	// Inserindo o item na tabela lst_compras_itens e fazendo a junção com a tabela de produtos para pegar o nome do produto
-	query, err := r.connection.Prepare(`
+	query := `
 		INSERT INTO prod.lst_compras_itens (lst_compras_id, products_id, lst_compras_itens_quantidade, lst_compras_itens_preco)
 		VALUES ($1, $2, $3, $4)
 		RETURNING lst_compras_itens_id
-	`)
-	if err != nil {
-		fmt.Println("Erro ao preparar a query:", err)
-		return 0, "", err
-	}
-	defer query.Close()
+	`
 	// Executando a inserção do item
-	err = query.QueryRow(item.LstCompras_Id, item.Product_Id, item.Quantidade, item.Preco).Scan(&Id)
+	err := tx.QueryRow(query, item.LstCompras_Id, item.Product_Id, item.Quantidade, item.Preco).Scan(&Id)
 	if err != nil {
 		fmt.Println("Erro ao inserir item:", err)
 		return 0, "", err
 	}
 
 	// Agora, realizando a junção para pegar o nome do produto usando o ID do produto inserido
-	queryGetProduct, err := r.connection.Prepare(`
+	queryGetProduct := `
 		SELECT p.products_name
 		FROM prod.products p
 		WHERE p.products_id = $1
-	`)
-	if err != nil {
-		fmt.Println("Erro ao preparar a consulta para pegar o nome do produto:", err)
-		return 0, "", err
-	}
+	`
 
 	// Executando a consulta para obter o nome do produto
-	err = queryGetProduct.QueryRow(item.Product_Id).Scan(&ProductName)
+	err = tx.QueryRow(queryGetProduct, item.Product_Id).Scan(&ProductName)
 	if err != nil {
 		fmt.Println("Erro ao obter o nome do produto:", err)
 		return 0, "", err
@@ -203,4 +195,14 @@ func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int) err
 	}
 
 	return nil
+}
+
+// Nova função para verificar se LstCompras_Id existe antes de inserir
+func (r *lstComprasItensRepository) CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error) {
+	var exists bool
+	query := `
+		SELECT EXISTS(SELECT 1 FROM prod.lst_compras WHERE lst_compras_id = $1)
+	`
+	err := tx.QueryRow(query, lstComprasId).Scan(&exists)
+	return exists, err
 }
