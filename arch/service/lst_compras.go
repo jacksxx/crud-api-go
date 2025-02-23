@@ -78,7 +78,7 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 		tx.Rollback()
 		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
 	}
-
+	//TODO: breno
 	// Verificar se a lista de compras realmente existe antes de continuar
 	existe, err := s.repository.VerificarExistenciaLstCompras(compras.Id, tx)
 	if err != nil {

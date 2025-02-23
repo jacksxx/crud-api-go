@@ -55,7 +55,7 @@ func (s *lstComprasItensService) CreateLstComprasItens(Item model.LstCompras_Ite
 			tx.Rollback()
 		}
 	}() // Garante rollback em caso de erro
-
+	//TODO: breno
 	// Verifica se LstCompras_Id existe antes de inserir o item
 	exists, err := s.repository.CheckLstComprasExists(Item.LstCompras_Id, tx)
 	if err != nil {

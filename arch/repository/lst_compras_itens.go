@@ -196,7 +196,7 @@ func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int) err
 
 	return nil
 }
-
+//TODO: breno
 // Nova função para verificar se LstCompras_Id existe antes de inserir
 func (r *lstComprasItensRepository) CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error) {
 	var exists bool
