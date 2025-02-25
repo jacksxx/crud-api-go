@@ -45,15 +45,20 @@ func main() {
 	baseRouter := "/api/v1"
 
 	// Inicializa repositórios, serviços e controllers
-	ProductRepository := repository.NewProductRepository(dbConnection)
-	ProductService := service.NewProductService(ProductRepository)
-	ProductController := controller.NewProductController(ProductService, validate, translator)
-	router.ProductsRouter(server, baseRouter+"/products", ProductController)
-
 	CategoryRepository := repository.NewCategoriasRepository(dbConnection)
 	CategoryService := service.NewCategoriaService(CategoryRepository)
 	CategoryController := controller.NewCategoriaController(CategoryService, validate, translator)
 	router.CategoriesRouter(server, baseRouter+"/categories", CategoryController)
+
+	UnitRepository := repository.NewUnidadesRepository(dbConnection)
+	UnitService := service.NewUnidadesService(UnitRepository)
+	UnitController := controller.NewUnitController(UnitService, validate, translator)
+	router.UnitsRouter(server, baseRouter+"/unidades", UnitController)
+
+	ProductRepository := repository.NewProductRepository(dbConnection)
+	ProductService := service.NewProductService(ProductRepository)
+	ProductController := controller.NewProductController(ProductService, validate, translator)
+	router.ProductsRouter(server, baseRouter+"/products", ProductController)
 
 	LstComprasItensRepository := repository.NewLstComprasItensRepository(dbConnection)
 	LstComprasItensService := service.NewLstComprasItensService(LstComprasItensRepository)

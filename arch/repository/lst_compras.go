@@ -122,8 +122,8 @@ func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post, t
 	var Id int
 
 	query := `
-		INSERT INTO prod.lst_compras (lst_compras_name , lst_compras_status_id)
-		VALUES ($1, 1)
+		INSERT INTO prod.lst_compras (lst_compras_name)
+		VALUES ($1)
 		RETURNING lst_compras_id
 	`
 	// Executa a query e escaneia o ID do item inserido

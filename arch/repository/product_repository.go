@@ -13,7 +13,7 @@ type ProductRepository interface {
 	BeginTransaction() (*sql.Tx, error)
 	GetProducts(filters model.ProductFilters) ([]model.Product, error)
 	GetProductByID(id int) (model.Product, error)
-	CreateProducts(product model.ProductPost) (int, string, error)
+	CreateProducts(product model.ProductPost) (model.ProductPost, error)
 	UpdateProducts(product model.ProductUpdate) (model.ProductUpdate, error)
 	InactivateProduct(id int) error
 	ActivateProduct(id int) error
@@ -41,9 +41,10 @@ func (r *productRepository) BeginTransaction() (*sql.Tx, error) {
 // GetProducts busca todos os produtos no banco de dados e retorna uma lista de produtos
 func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.Product, error) {
 	query := `
-		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
+		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.unidade_id, u.unidade_descricao, u.unidade_abreviacao, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
 		FROM prod.products p
-		JOIN prod.categorias c ON p.categorias_id = c.categorias_id`
+		JOIN prod.categorias c ON p.categorias_id = c.categorias_id
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id`
 	var conditions []string
 	var args []interface{}
 	argIndex := 1
@@ -57,6 +58,12 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 	if filters.Categoria_Id > 0 {
 		conditions = append(conditions, fmt.Sprintf("p.categorias_id = $%d", argIndex))
 		args = append(args, filters.Categoria_Id)
+		argIndex++
+	}
+
+	if filters.Unidade_Id > 0 {
+		conditions = append(conditions, fmt.Sprintf("p.unidade_id = $%d", argIndex))
+		args = append(args, filters.Unidade_Id)
 		argIndex++
 	}
 
@@ -89,7 +96,7 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 
 	for rows.Next() {
 		var product model.Product
-		if err := rows.Scan(&product.Id, &product.Name, &product.Price, &product.Categoria_Id, &product.Categoria_Name, &product.Data_Cadastro, &product.Data_Atualizacao, &product.Data_Inativacao, &product.Status); err != nil {
+		if err := rows.Scan(&product.Id, &product.Name, &product.Price, &product.Categoria_Id, &product.Categoria_Name, &product.Unidade_Id, &product.Unidade_Descricao, &product.Unidade_Abreviacao, &product.Data_Cadastro, &product.Data_Atualizacao, &product.Data_Inativacao, &product.Status); err != nil {
 			return nil, err
 		}
 		productList = append(productList, product)
@@ -102,9 +109,10 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 	// Prepara a query SQL para evitar SQL Injection
 	query, err := pr.connection.Prepare(`
-		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
+		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.unidade_id, u.unidade_descricao, u.unidade_abreviacao, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
 		FROM prod.products p
 		JOIN prod.categorias c ON p.categorias_id = c.categorias_id
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
 		WHERE p.products_id = $1
 	`)
 	if err != nil {
@@ -120,6 +128,9 @@ func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 		&product.Price,
 		&product.Categoria_Id,
 		&product.Categoria_Name,
+		&product.Unidade_Id,
+		&product.Unidade_Descricao,
+		&product.Unidade_Abreviacao,
 		&product.Data_Cadastro,
 		&product.Data_Atualizacao,
 		&product.Data_Inativacao,
@@ -141,26 +152,29 @@ func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 }
 
 // CreateProducts insere um novo produto no banco de dados e retorna o ID do produto inserido
-func (pr *productRepository) CreateProducts(product model.ProductPost) (int, string, error) {
+func (pr *productRepository) CreateProducts(product model.ProductPost) (model.ProductPost, error) {
 	var Id int
 	var CategoriaName string
+	var UnidadeDescricao string
+
 	// Prepara a query de inserção para evitar SQL Injection
 	query, err := pr.connection.Prepare(`
-		INSERT INTO prod.products (products_name, products_price, categorias_id)
-		VALUES ($1, $2, $3)
-		RETURNING products_id, categorias_id;
+		INSERT INTO prod.products (products_name, products_price, categorias_id, unidade_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING products_id, categorias_id, unidade_id;
 	`)
 	if err != nil {
-		fmt.Println(err)  // Log do erro
-		return 0, "", err // Retorna erro caso a preparação da query falhe
+		fmt.Println(err)                // Log do erro
+		return model.ProductPost{}, err // Retorna erro caso a preparação da query falhe
 	}
 	defer query.Close() // Garante que a query será fechada após a execução
 
-	// Executa a query e escaneia o ID do produto e o ID da categoria associada ao novo produto
-	err = query.QueryRow(product.Name, product.Price, product.Categoria_Id).Scan(&Id, &product.Categoria_Id)
+	// Executa a query e escaneia o ID do produto e os IDs da categoria e unidade associadas
+	err = query.QueryRow(product.Name, product.Price, product.Categoria_Id, product.Unidade_Id).
+		Scan(&Id, &product.Categoria_Id, &product.Unidade_Id)
 	if err != nil {
-		fmt.Println(err)  // Log do erro
-		return 0, "", err // Retorna erro caso ocorra uma falha na inserção
+		fmt.Println(err)                // Log do erro
+		return model.ProductPost{}, err // Retorna erro caso ocorra uma falha na inserção
 	}
 
 	// Agora que o produto foi inserido, vamos buscar o nome da categoria com base no categoria_id
@@ -171,11 +185,28 @@ func (pr *productRepository) CreateProducts(product model.ProductPost) (int, str
 	`, product.Categoria_Id).Scan(&CategoriaName)
 
 	if err != nil {
-		fmt.Println(err)  // Log do erro
-		return 0, "", err // Retorna erro caso não consiga recuperar o nome da categoria
+		fmt.Println(err)                // Log do erro
+		return model.ProductPost{}, err // Retorna erro caso não consiga recuperar o nome da categoria
 	}
 
-	return Id, CategoriaName, nil // Retorna o ID do novo produto e o nome da categoria
+	// Agora, buscar a descrição da unidade com base no unidade_id
+	err = pr.connection.QueryRow(`
+		SELECT unidade_descricao
+		FROM prod.unidades
+		WHERE unidade_id = $1
+	`, product.Unidade_Id).Scan(&UnidadeDescricao)
+
+	if err != nil {
+		fmt.Println(err)                // Log do erro
+		return model.ProductPost{}, err // Retorna erro caso não consiga recuperar a descrição da unidade
+	}
+
+	// Atribui o nome da categoria e a descrição da unidade aos campos do produto
+	product.Id = Id
+	product.Categoria_Name = CategoriaName
+	product.Unidade_Descricao = UnidadeDescricao
+
+	return product, nil // Retorna o produto com o ID, nome da categoria e descrição da unidade
 }
 
 // UpdateProducts atualiza um produto existente no banco de dados
@@ -186,31 +217,44 @@ func (pr *productRepository) UpdateProducts(product model.ProductUpdate) (model.
 		UPDATE prod.products
 		SET products_name = $1, products_price = $2, categorias_id = $3, products_data_atualizacao = CURRENT_TIMESTAMP
 		WHERE products_id = $4
-		RETURNING products_id, categorias_id;
+		RETURNING products_id, categorias_id, unidade_id;
 	`)
 	if err != nil {
-		fmt.Println(err)                  // Log do erro
+		fmt.Println("Erro ao preparar a query de atualização:", err)
 		return model.ProductUpdate{}, err // Retorna erro caso a preparação da query falhe
 	}
 	defer query.Close() // Garante que a query será fechada após a execução
-	var categoriaId int
-	var CategoriaName string
-	// Executa a query e escaneia o ID do produto atualizado
-	err = query.QueryRow(product.Name, product.Price, product.Categoria_Id, product.Id).Scan(&product.Id, &categoriaId)
+
+	// Executa a query de atualização e escaneia os valores retornados
+	var categoriaId, unidadeId int
+	err = query.QueryRow(product.Name, product.Price, product.Categoria_Id, product.Id).
+		Scan(&product.Id, &categoriaId, &unidadeId)
 	if err != nil {
-		fmt.Println(err)                  // Log do erro
+		fmt.Println("Erro ao executar a query de atualização:", err)
 		return model.ProductUpdate{}, err // Retorna erro caso ocorra uma falha na atualização
 	}
 
-	err = pr.connection.QueryRow("SELECT categorias_name FROM prod.categorias WHERE categorias_id = $1", categoriaId).Scan(&CategoriaName)
+	// Busca o nome da categoria com base no categoriaId
+	var categoriaName string
+	err = pr.connection.QueryRow("SELECT categorias_name FROM prod.categorias WHERE categorias_id = $1", categoriaId).Scan(&categoriaName)
 	if err != nil {
-		// Tratamento de erro
 		fmt.Println("Erro ao buscar o nome da categoria:", err)
-		return model.ProductUpdate{}, err
+		return model.ProductUpdate{}, err // Retorna erro caso não consiga recuperar o nome da categoria
 	}
-	// Atualiza o nome da categoria no produto
-	product.Categoria_Name = CategoriaName
-	// Retorna o produto com o ID atualizado
+
+	// Busca a descrição da unidade com base no unidadeId
+	var unidadeDescricao string
+	err = pr.connection.QueryRow("SELECT unidade_descricao FROM prod.unidades WHERE unidade_id = $1", unidadeId).Scan(&unidadeDescricao)
+	if err != nil {
+		fmt.Println("Erro ao buscar a descrição da unidade:", err)
+		return model.ProductUpdate{}, err // Retorna erro caso não consiga recuperar a descrição da unidade
+	}
+
+	// Atualiza os campos do produto com os valores obtidos
+	product.Categoria_Name = categoriaName
+	product.Unidade_Descricao = unidadeDescricao
+
+	// Retorna o produto com as informações atualizadas
 	return product, nil
 }
 
@@ -272,6 +316,12 @@ func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, e
 	if filters.Name != "" {
 		conditions = append(conditions, fmt.Sprintf("products_name ILIKE $%d", argIndex))
 		args = append(args, "%"+filters.Name+"%")
+		argIndex++
+	}
+
+	if filters.Unidade_Id > 0 {
+		conditions = append(conditions, fmt.Sprintf("unidade_id = $%d", argIndex))
+		args = append(args, filters.Unidade_Id)
 		argIndex++
 	}
 

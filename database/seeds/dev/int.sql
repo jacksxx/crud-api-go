@@ -41,6 +41,29 @@ VALUES
     ('Produtos de Limpeza');
 
 CREATE TABLE
+    IF NOT EXISTS prod.unidades (
+        unidade_id SERIAL PRIMARY KEY,
+        unidade_descricao VARCHAR(100) NOT NULL,
+        unidade_abreviacao VARCHAR(10) NOT NULL UNIQUE,
+        unidade_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        unidade_data_atualizacao TIMESTAMP NULL
+    );
+
+-- Inserindo algumas unidades de medida comuns
+INSERT INTO
+    prod.unidades (unidade_descricao, unidade_abreviacao)
+VALUES
+    ('Unidade', 'un'),
+    ('Litro', 'L'),
+    ('Mililitro', 'mL'),
+    ('Quilograma', 'kg'),
+    ('Grama', 'g'),
+    ('Metro', 'm'),
+    ('Centímetro', 'cm'),
+    ('Pacote', 'pct'),
+    ('Caixa', 'cx');
+
+CREATE TABLE
     IF NOT EXISTS prod.products (
         products_id SERIAL PRIMARY KEY,
         products_name VARCHAR(50) NOT NULL,
@@ -49,69 +72,75 @@ CREATE TABLE
         products_data_atualizacao TIMESTAMP NULL,
         products_data_inativacao TIMESTAMP NULL,
         products_status VARCHAR(50) NOT NULL DEFAULT 'ativo',
-        categorias_id INT NOT NULL REFERENCES prod.categorias (categorias_id) ON DELETE CASCADE
+        categorias_id INT NOT NULL REFERENCES prod.categorias (categorias_id) ON DELETE CASCADE,
+        unidade_id INT NOT NULL REFERENCES prod.unidades (unidade_id) ON DELETE CASCADE
     );
 
 -- Inserindo os produtos com categorias
 INSERT INTO
-    prod.products (products_name, products_price, categorias_id)
+    prod.products (
+        products_name,
+        products_price,
+        categorias_id,
+        unidade_id
+    )
 VALUES
-    -- Bebidas (categoria_id = 1)
-    ('Coca-Cola', 4.50, 1),
-    ('Suco de Laranja', 3.20, 1),
-    ('Água Mineral', 1.00, 1),
-    ('Cerveja Heineken', 6.80, 1),
-    ('Refrigerante Guaraná', 3.90, 1),
-    ('Chá Gelado', 2.80, 1),
-    -- Lanches (categoria_id = 2)
-    ('X-Tudo', 8.90, 2),
-    ('Pastel de Queijo', 4.50, 2),
-    ('Coxinha', 3.00, 2),
-    ('Hambúrguer', 7.99, 2),
-    ('Misto Quente', 5.00, 2),
-    ('Esfiha', 4.25, 2),
-    -- Doces e Sobremesas (categoria_id = 3)
-    ('Chocolate ao Leite', 7.50, 3),
-    ('Sorvete de Morango', 5.25, 3),
-    ('Pudim', 4.75, 3),
-    ('Brigadeiro', 2.50, 3),
-    ('Torta de Limão', 6.90, 3),
-    ('Bolo de Chocolate', 9.99, 3),
-    -- Produtos de Padaria (categoria_id = 4)
-    ('Pão Francês', 0.80, 4),
-    ('Croissant', 3.99, 4),
-    ('Bolo de Cenoura', 10.50, 4),
-    ('Rosquinha', 2.75, 4),
-    ('Pão de Queijo', 4.50, 4),
-    ('Baguete', 5.20, 4),
-    -- Alimentos Básicos (categoria_id = 5)
-    ('Arroz 5kg', 20.00, 5),
-    ('Feijão 1kg', 9.50, 5),
-    ('Macarrão Espaguete', 3.25, 5),
-    ('Óleo de Soja', 7.99, 5),
-    ('Sal', 2.30, 5),
-    ('Açúcar', 4.00, 5),
-    -- Carnes e Proteínas (categoria_id = 6)
-    ('Filé de Frango 1kg', 18.50, 6),
-    ('Carne Moída 1kg', 27.90, 6),
-    ('Salmão 500g', 32.80, 6),
-    ('Linguiça Toscana', 15.99, 6),
-    ('Bife de Contra Filé', 29.50, 6),
-    ('Peito de Peru', 25.75, 6),
-    -- Frutas e Verduras (categoria_id = 7)
-    ('Maçã', 4.20, 7),
-    ('Tomate', 5.30, 7),
-    ('Alface', 2.50, 7),
-    ('Banana', 3.00, 7),
-    ('Abacaxi', 7.20, 7),
-    ('Cenoura', 4.80, 7),
-    -- Produtos de Limpeza (categoria_id = 8)
-    ('Detergente', 3.60, 8),
-    ('Sabão em Pó', 15.90, 8),
-    ('Papel Higiênico 12un', 18.00, 8),
-    ('Amaciante', 12.50, 8),
-    ('Álcool 70%', 8.99, 8),
-    ('Esponja de Limpeza', 2.75, 8);
+    -- Bebidas (Litros ou Mililitros)
+    ('Coca-Cola', 4.50, 1, 2), -- Litro
+    ('Suco de Laranja', 3.20, 1, 3), -- Mililitro
+    ('Água Mineral', 1.00, 1, 2), -- Litro
+    ('Cerveja Heineken', 6.80, 1, 3), -- Mililitro
+    ('Refrigerante Guaraná', 3.90, 1, 2), -- Litro
+    ('Chá Gelado', 2.80, 1, 3), -- Mililitro
+    -- Lanches (Unidade)
+    ('X-Tudo', 8.90, 2, 1),
+    ('Pastel de Queijo', 4.50, 2, 1),
+    ('Coxinha', 3.00, 2, 1),
+    ('Hambúrguer', 7.99, 2, 1),
+    ('Misto Quente', 5.00, 2, 1),
+    ('Esfiha', 4.25, 2, 1),
+    -- Doces e Sobremesas (Grama ou Unidade)
+    ('Chocolate ao Leite', 7.50, 3, 5), -- Grama
+    ('Sorvete de Morango', 5.25, 3, 3), -- Mililitro
+    ('Pudim', 4.75, 3, 1),
+    ('Brigadeiro', 2.50, 3, 5), -- Grama
+    ('Torta de Limão', 6.90, 3, 1),
+    ('Bolo de Chocolate', 9.99, 3, 1),
+    -- Produtos de Padaria (Unidade)
+    ('Pão Francês', 0.80, 4, 1),
+    ('Croissant', 3.99, 4, 1),
+    ('Bolo de Cenoura', 10.50, 4, 1),
+    ('Rosquinha', 2.75, 4, 1),
+    ('Pão de Queijo', 4.50, 4, 1),
+    ('Baguete', 5.20, 4, 1),
+    -- Alimentos Básicos (Kg ou Unidade)
+    ('Arroz 5kg', 20.00, 5, 4), -- Kg
+    ('Feijão 1kg', 9.50, 5, 4), -- Kg
+    ('Macarrão Espaguete', 3.25, 5, 1),
+    ('Óleo de Soja', 7.99, 5, 2), -- Litro
+    ('Sal', 2.30, 5, 4), -- Kg
+    ('Açúcar', 4.00, 5, 4), -- Kg
+    -- Carnes e Proteínas (Kg)
+    ('Filé de Frango 1kg', 18.50, 6, 4), -- Kg
+    ('Carne Moída 1kg', 27.90, 6, 4), -- Kg
+    ('Salmão 500g', 32.80, 6, 5), -- Grama
+    ('Linguiça Toscana', 15.99, 6, 4), -- Kg
+    ('Bife de Contra Filé', 29.50, 6, 4), -- Kg
+    ('Peito de Peru', 25.75, 6, 4), -- Kg
+    -- Frutas e Verduras (Kg ou Unidade)
+    ('Maçã', 4.20, 7, 4), -- Kg
+    ('Tomate', 5.30, 7, 4), -- Kg
+    ('Alface', 2.50, 7, 7), -- Metro (folhas)
+    ('Banana', 3.00, 7, 4), -- Kg
+    ('Abacaxi', 7.20, 7, 1), -- Unidade
+    ('Cenoura', 4.80, 7, 4), -- Kg
+    -- Produtos de Limpeza (Pacote, Unidade ou Litro)
+    ('Detergente', 3.60, 8, 2), -- Litro
+    ('Sabão em Pó', 15.90, 8, 4), -- Kg
+    ('Papel Higiênico 12un', 18.00, 8, 8), -- Pacote
+    ('Amaciante', 12.50, 8, 2), -- Litro
+    ('Álcool 70%', 8.99, 8, 2), -- Litro
+    ('Esponja de Limpeza', 2.75, 8, 1);
 
 --- TABELA DOS STATUS DA LISTA DE COMPRAS
 CREATE TABLE
@@ -136,7 +165,7 @@ CREATE TABLE
         lst_compras_name VARCHAR(150) NOT NULL,
         lst_compras_valor_total DECIMAL(10, 2) NOT NULL DEFAULT 0,
         lst_compras_total_itens INT NOT NULL DEFAULT 0,
-        lst_compras_status_id INT NOT NULL REFERENCES prod.lst_compras_status (lst_compras_status_id),
+        lst_compras_status_id INT NOT NULL REFERENCES prod.lst_compras_status (lst_compras_status_id) DEFAULT 1,
         lst_compras_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         lst_compras_data_atualizacao TIMESTAMP NULL
     );

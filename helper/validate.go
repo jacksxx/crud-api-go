@@ -5,6 +5,19 @@ import (
 	"fmt"
 )
 
+func ValidateUnit(db *sql.DB, unidadeId int) error {
+	var count int
+	query := `SELECT COUNT(1) FROM prod.unidades WHERE unidade_id = $1`
+	err := db.QueryRow(query, unidadeId).Scan(&count)
+	if err != nil {
+		return err // Se houver erro ao consultar, retornamos o erro
+	}
+	if count == 0 {
+		return fmt.Errorf("unidade não encontrada") // Se count for 0, categoria não existe
+	}
+	return nil // Categoria existe
+}
+
 // ValidateCategory verifica se a categoria existe no banco de dados.
 func ValidateCategory(db *sql.DB, categoriaId int) error {
 	var count int
