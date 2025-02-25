@@ -78,7 +78,7 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 		tx.Rollback()
 		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
 	}
-	//TODO: breno
+
 	// Verificar se a lista de compras realmente existe antes de continuar
 	existe, err := s.repository.VerificarExistenciaLstCompras(compras.Id, tx)
 	if err != nil {
@@ -93,8 +93,8 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 		material.LstCompras_Id = compras.Id
 
 		// Criar o item dentro da transação
-		ItensCompras, httpStatus, err := s.itensComprasService.CreateLstComprasItens(material)
-		if err != nil {			
+		ItensCompras, httpStatus, err := s.itensComprasService.CreateLstComprasItens(material, tx)
+		if err != nil {
 			return model.LstCompras_Post{}, http.StatusInternalServerError, err
 		}
 
@@ -117,8 +117,7 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 	}
 
 	// Confirmar a transação
-	err = tx.Commit()
-	if err != nil {
+	if err := tx.Commit(); err != nil {
 		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 

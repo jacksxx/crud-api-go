@@ -174,11 +174,12 @@ func (r *lstComprasRepository) TotaisLstCompras(compras model.LstCompras_Post, t
 	var status, totalItens int
 	var totalPreco float64
 
-	queryTotals, err := r.connection.Prepare(`
+	queryTotals, err := tx.Prepare(`
 		SELECT lst_compras_status_id, lst_compras_total_itens, lst_compras_valor_total
 		FROM prod.lst_compras
-		WHERE lst_compras_id = $1;
+		WHERE lst_compras_id = $1
 	`)
+	fmt.Println("compras.Id:", compras.Id)
 
 	if err != nil {
 		return model.LstCompras_Post{}, fmt.Errorf("erro ao preparar a consulta para buscar totais atualizados: %v", err)
@@ -202,9 +203,7 @@ func (r *lstComprasRepository) VerificarExistenciaLstCompras(lstComprasId int, t
 
 	err := tx.QueryRow(query, lstComprasId).Scan(&exists)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil // Retorna false se não encontrar a lista de compras
-		}
+
 		return false, fmt.Errorf("erro ao verificar existência da lista de compras: %v", err)
 	}
 
