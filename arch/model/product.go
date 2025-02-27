@@ -3,18 +3,18 @@ package model
 import "time"
 
 type Product struct {
-	Id                int        `json:"id" db:"products_id"`
-	Name              string     `json:"name" db:"products_name"`
-	Price             float64    `json:"price" db:"products_price"`
-	Categoria_Id      int        `json:"categorias_id" db:"categorias_id"`
-	Categoria_Name    string     `json:"categoria_name" db:"categorias_name"`
-	Unidade_Id        int        `json:"unidade_id" db:"unidade_id"`
-	Unidade_Descricao string     `json:"unidade_descricao" db:"unidade_descricao"`
+	Id                 int        `json:"id" db:"products_id"`
+	Name               string     `json:"name" db:"products_name"`
+	Price              float64    `json:"price" db:"products_price"`
+	Categoria_Id       int        `json:"categorias_id" db:"categorias_id"`
+	Categoria_Name     string     `json:"categoria_name" db:"categorias_name"`
+	Unidade_Id         int        `json:"unidade_id" db:"unidade_id"`
+	Unidade_Descricao  string     `json:"unidade_descricao" db:"unidade_descricao"`
 	Unidade_Abreviacao string     `json:"unidade_abreviacao" db:"unidade_abreviacao"`
-	Data_Cadastro     time.Time  `json:"data_cadastro" db:"products_data_cadastro"`
-	Data_Atualizacao  *time.Time `json:"data_atualizacao" db:"products_data_atualizacao"`
-	Data_Inativacao   *time.Time `json:"data_inativacao" db:"products_data_inativacao"`
-	Status            string     `json:"status" db:"products_status"`
+	Data_Cadastro      time.Time  `json:"data_cadastro" db:"products_data_cadastro"`
+	Data_Atualizacao   *time.Time `json:"data_atualizacao" db:"products_data_atualizacao"`
+	Data_Inativacao    *time.Time `json:"data_inativacao" db:"products_data_inativacao"`
+	Status             string     `json:"status" db:"products_status"`
 }
 
 type ProductPost struct {

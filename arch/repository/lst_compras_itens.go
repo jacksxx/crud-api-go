@@ -34,12 +34,14 @@ func (r *lstComprasItensRepository) BeginTransaction() (*sql.Tx, error) {
 
 func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error) {
 	query := `
-		SELECT i.lst_compras_itens_id, i.lst_compras_id, i.products_id, p.products_name, 
+		SELECT i.lst_compras_itens_id, i.lst_compras_id, i.products_id, p.products_name,
+			   u.unidade_descricao, u.unidade_abreviacao, 
 		       i.lst_compras_itens_quantidade, i.lst_compras_itens_preco, 
 		       i.lst_compras_itens_comprado, i.lst_compras_itens_data_cadastro, 
 		       i.lst_compras_itens_data_atualizacao
 		FROM prod.lst_compras_itens i
-		JOIN prod.products p ON i.products_id = p.products_id`
+		JOIN prod.products p ON i.products_id = p.products_id
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id`
 
 	var conditions []string
 	var args []interface{}
@@ -87,7 +89,7 @@ func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_
 
 	for rows.Next() {
 		var item model.LstCompras_Itens
-		if err := rows.Scan(&item.Id, &item.LstCompras_Id, &item.Product_Id, &item.Product_Name, &item.Quantidade, &item.Preco, &item.Item_Check, &item.Data_Cadastro, &item.Data_Atualizacao); err != nil {
+		if err := rows.Scan(&item.Id, &item.LstCompras_Id, &item.Product_Id, &item.Product_Name, &item.Unidade_Descricao, &item.Unidade_Abreviacao, &item.Quantidade, &item.Preco, &item.Item_Check, &item.Data_Cadastro, &item.Data_Atualizacao); err != nil {
 			return nil, err
 		}
 		groupedItems[item.LstCompras_Id] = append(groupedItems[item.LstCompras_Id], item)
@@ -99,11 +101,13 @@ func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_
 func (r *lstComprasItensRepository) GetLstComprasItensById(id int) (model.LstCompras_Itens, error) {
 	query, err := r.connection.Prepare(`
 		SELECT i.lst_compras_itens_id, i.lst_compras_id, i.products_id, p.products_name, 
+			   u.unidade_descricao, u.unidade_abreviacao, 
 		       i.lst_compras_itens_quantidade, i.lst_compras_itens_preco, 
 		       i.lst_compras_itens_comprado, i.lst_compras_itens_data_cadastro, 
 		       i.lst_compras_itens_data_atualizacao
 		FROM prod.lst_compras_itens i
 		JOIN prod.products p ON i.products_id = p.products_id
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
 		WHERE i.lst_compras_itens_id = $1
 	`)
 	if err != nil {
@@ -115,7 +119,7 @@ func (r *lstComprasItensRepository) GetLstComprasItensById(id int) (model.LstCom
 
 	var item model.LstCompras_Itens
 
-	err = query.QueryRow(id).Scan(&item.Id, &item.LstCompras_Id, &item.Product_Id, &item.Product_Name, &item.Quantidade, &item.Preco, &item.Item_Check, &item.Data_Cadastro, &item.Data_Atualizacao)
+	err = query.QueryRow(id).Scan(&item.Id, &item.LstCompras_Id, &item.Product_Id, &item.Product_Name, &item.Unidade_Descricao, &item.Unidade_Abreviacao, &item.Quantidade, &item.Preco, &item.Item_Check, &item.Data_Cadastro, &item.Data_Atualizacao)
 	if err != nil {
 		// Log de erro caso a consulta falhe
 		if err == sql.ErrNoRows {
@@ -135,7 +139,7 @@ func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_I
 	}
 
 	var Id int
-	var ProductName string
+	var ProductName, UnidadeName, UnidadeAbreviacao string
 
 	// Inserindo o item na tabela lst_compras_itens e fazendo a junção com a tabela de produtos para pegar o nome do produto
 	query := `
@@ -151,19 +155,22 @@ func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_I
 
 	// Agora, realizando a junção para pegar o nome do produto usando o ID do produto inserido
 	queryGetProduct := `
-		SELECT p.products_name
+		SELECT p.products_name, u.unidade_descricao, u.unidade_abreviacao
 		FROM prod.products p
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
 		WHERE p.products_id = $1
 	`
 
 	// Executando a consulta para obter o nome do produto
-	err = tx.QueryRow(queryGetProduct, item.Product_Id).Scan(&ProductName)
+	err = tx.QueryRow(queryGetProduct, item.Product_Id).Scan(&ProductName, &UnidadeName, &UnidadeAbreviacao)
 	if err != nil {
 		return model.LstCompras_Itens_Post{}, err
 	}
 
 	item.Id = Id
 	item.Product_Name = ProductName
+	item.Unidade_Descricao = UnidadeName
+	item.Unidade_Abreviacao = UnidadeAbreviacao
 
 	return item, nil
 }
@@ -191,7 +198,7 @@ func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int, tx 
 		return err
 	}
 	defer query.Close()
-	
+
 	_, err = query.Exec(lstComprasId)
 	if err != nil {
 		fmt.Println("Erro ao atualizar totais da lista de compras:", err)
@@ -201,7 +208,6 @@ func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int, tx 
 	return nil
 }
 
-// TODO: breno
 // Nova função para verificar se LstCompras_Id existe antes de inserir
 func (r *lstComprasItensRepository) CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error) {
 	var exists bool
