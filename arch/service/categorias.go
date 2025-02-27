@@ -15,8 +15,6 @@ type CategoriaService interface {
 	UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, int, error)
 	InactivateCategorias(id int) error
 	ActivateCategorias(id int) error
-	ValidateCategoryName(nomeCategoria string, categoriaId *int) error
-	ValidateCategory(categoriaId int) error
 }
 
 type categoriaService struct {
@@ -59,54 +57,103 @@ func (cs *categoriaService) GetProductByID(id int) (model.Categorias, int, error
 }
 
 func (cs *categoriaService) CreateCategorias(categorias model.CategoriasPost) (model.CategoriasPost, int, error) {
+	tx, err := cs.repository.BeginTransaction()
+	if err != nil {
+		return model.CategoriasPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback()
 
-	categoriaID, err := cs.repository.CreateCategorias(categorias)
+	err = cs.repository.ValidateCategoryName(categorias.Name, &categorias.Id, tx)
 	if err != nil {
 		return model.CategoriasPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar categoria: %v", err)
 	}
 
-	categorias.Id = categoriaID
+	categoria, err := cs.repository.CreateCategorias(categorias, tx)
+	if err != nil {
+		return model.CategoriasPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar categoria: %v", err)
+	}
 
-	return categorias, http.StatusOK, nil
+	// Confirmar a transação
+	if err := tx.Commit(); err != nil {
+		return model.CategoriasPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
+	}
+	return categoria, http.StatusOK, nil
 }
 
 func (cs *categoriaService) UpdateCategorias(categorias model.CategoriasUpdate) (model.CategoriasUpdate, int, error) {
 
-	updatedCategories, err := cs.repository.UpdateCategoria(categorias)
+	tx, err := cs.repository.BeginTransaction()
+	if err != nil {
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback()
+
+	err = cs.repository.ValidateCategoryName(categorias.Name, &categorias.Id, tx)
 	if err != nil {
 		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
+	}
+
+	// Chama o serviço para verificar se a categoria existe
+	err = cs.repository.ValidateCategory(categorias.Id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
+	}
+
+	updatedCategories, err := cs.repository.UpdateCategoria(categorias, tx)
+	if err != nil {
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 	return updatedCategories, http.StatusOK, nil
 }
 
 func (cs *categoriaService) InactivateCategorias(id int) error {
-	err := cs.repository.InactivateCategoria(id)
+	tx, err := cs.repository.BeginTransaction()
+	if err != nil {
+		return fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback()
+	// Chama o serviço para verificar se a categoria existe
+	err = cs.repository.ValidateCategory(id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return fmt.Errorf("erro ao Inativar categoria: %v", err)
+	}
+
+	err = cs.repository.InactivateCategoria(id, tx)
 	if err != nil {
 		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 	return nil
 }
 
 func (cs *categoriaService) ActivateCategorias(id int) error {
-	err := cs.repository.ActivateCategoria(id)
+	tx, err := cs.repository.BeginTransaction()
 	if err != nil {
-		return err
+		return fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
-	return nil
-}
 
-func (cs *categoriaService) ValidateCategoryName(nomeCategoria string, categoriaId *int) error {
-	err := cs.repository.ValidateCategoryName(nomeCategoria, categoriaId)
+	err = cs.repository.ValidateCategory(id, tx)
 	if err != nil {
-		return err
+		return fmt.Errorf("erro ao Ativar categoria: %v", err)
 	}
-	return nil
-}
 
-func (cs *categoriaService) ValidateCategory(categoriaId int) error {
-	err := cs.repository.ValidateCategory(categoriaId)
+	err = cs.repository.ActivateCategoria(id, tx)
 	if err != nil {
 		return err
 	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("erro ao confirmar transação: %v", err)
+	}
+
 	return nil
 }

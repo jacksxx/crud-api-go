@@ -61,14 +61,20 @@ func (s *unidadesService) CreateUnit(unit model.UnidadesPost) (model.UnidadesPos
 	}
 	defer tx.Rollback()
 
+	err = s.repository.ValidateUnitName(unit.Descricao, &unit.Id, tx)
+	if err != nil {
+		return model.UnidadesPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar unidade: %v", err.Error())
+	}
+	err = s.repository.ValidateUnitAbrev(unit.Abreviacao, &unit.Id, tx)
+	if err != nil {
+		return model.UnidadesPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar unidade: %v", err.Error())
+	}
+
 	units, err := s.repository.CreateUnidades(unit, tx)
 	if err != nil {
 		return model.UnidadesPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar unidade: %v", err)
 	}
-	err = s.repository.ValidateUnitName(units.Descricao, &units.Id)
-	if err != nil {
-		return model.UnidadesPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar unidade: %v", err.Error())
-	}
+
 	// Confirmar a transação
 	err = tx.Commit()
 	if err != nil {
@@ -83,20 +89,24 @@ func (s *unidadesService) UpdateUnit(unit model.UnidadesUpdate) (model.UnidadesU
 		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
-	
+
+	err = s.repository.ValidateUnit(unit.Id, tx)
+	if err != nil {
+		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao alterar unidade: %v", err.Error())
+	}
+
+	err = s.repository.ValidateUnitName(unit.Descricao, &unit.Id, tx)
+	if err != nil {
+		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao alterar unidade: %v", err.Error())
+	}
+	err = s.repository.ValidateUnitAbrev(unit.Abreviacao, &unit.Id, tx)
+	if err != nil {
+		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao alterar unidade: %v", err.Error())
+	}
+
 	units, err := s.repository.UpdateUnidades(unit, tx)
 	if err != nil {
 		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao alterar unidade: %v", err)
-	}
-
-	err = s.repository.ValidateUnit(units.Id)
-	if err != nil {
-		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao alterar unidade: %v", err.Error())
-	}
-
-	err = s.repository.ValidateUnitName(units.Descricao, &units.Id)
-	if err != nil {
-		return model.UnidadesUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao alterar unidade: %v", err.Error())
 	}
 
 	// Confirmar a transação

@@ -112,7 +112,6 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 	// Atualizar totais da lista dentro da transação
 	compras, err = s.repository.TotaisLstCompras(compras, tx)
 	if err != nil {
-		tx.Rollback()
 		return model.LstCompras_Post{}, http.StatusInternalServerError, err
 	}
 

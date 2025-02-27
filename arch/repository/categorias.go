@@ -9,15 +9,16 @@ import (
 )
 
 type CategoriasRepository interface {
+	BeginTransaction() (*sql.Tx, error)
 	GetCategorias(categorias model.CategoriasFilters) ([]model.Categorias, error)
 	GetCategoriasById(id int) (model.Categorias, error)
-	CreateCategorias(categorias model.CategoriasPost) (int, error)
-	UpdateCategoria(categorias model.CategoriasUpdate) (model.CategoriasUpdate, error)
-	InactivateCategoria(id int) error
-	ActivateCategoria(id int) error
-	ValidateCategoryName(nomeCategorias string, categoriaId *int) error
+	CreateCategorias(categorias model.CategoriasPost, tx *sql.Tx) (model.CategoriasPost, error)
+	UpdateCategoria(categorias model.CategoriasUpdate, tx *sql.Tx) (model.CategoriasUpdate, error)
+	InactivateCategoria(id int, tx *sql.Tx) error
+	ActivateCategoria(id int, tx *sql.Tx) error
+	ValidateCategoryName(nomeCategorias string, categoriaId *int, tx *sql.Tx) error
+	ValidateCategory(categoriaId int, tx *sql.Tx) error
 	CountCategories(filters model.CategoriasFilters) (int, error)
-	ValidateCategory(categoriaId int) error
 }
 
 type categoriasRepository struct {
@@ -28,6 +29,10 @@ func NewCategoriasRepository(connection *sql.DB) CategoriasRepository {
 	return &categoriasRepository{
 		connection: connection,
 	}
+}
+
+func (r *categoriasRepository) BeginTransaction() (*sql.Tx, error) {
+	return r.connection.Begin()
 }
 
 func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) ([]model.Categorias, error) {
@@ -52,9 +57,6 @@ func (cr *categoriasRepository) GetCategorias(filters model.CategoriasFilters) (
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
-
-	// Add ORDER BY clause
-	query += " ORDER BY categorias_name ASC "
 
 	offset := (filters.Page - 1) * filters.Limit
 	if offset < 0 {
@@ -108,40 +110,31 @@ func (cr *categoriasRepository) GetCategoriasById(id int) (model.Categorias, err
 	return categoria, nil
 }
 
-func (cr *categoriasRepository) CreateCategorias(categorias model.CategoriasPost) (int, error) {
+func (cr *categoriasRepository) CreateCategorias(categorias model.CategoriasPost, tx *sql.Tx) (model.CategoriasPost, error) {
 	var Id int
 
-	query, err := cr.connection.Prepare(`
+	query := `
 	INSERT INTO prod.categorias (categorias_name) 
 	VALUES ($1)
-	RETURNING categorias_id`)
-	if err != nil {
-		fmt.Println(err)
-		return 0, err
-	}
-	defer query.Close()
+	RETURNING categorias_id`
 
-	err = query.QueryRow(categorias.Name).Scan(&Id)
+	err := tx.QueryRow(query, categorias.Name).Scan(&Id)
 	if err != nil {
-		fmt.Println(err)
-		return 0, err
+		return model.CategoriasPost{}, fmt.Errorf("erro ao criar categoria: %w", err)
 	}
-	return Id, nil
+	categorias.Id = Id
+
+	return categorias, nil
 }
 
-func (cr *categoriasRepository) UpdateCategoria(categorias model.CategoriasUpdate) (model.CategoriasUpdate, error) {
+func (cr *categoriasRepository) UpdateCategoria(categorias model.CategoriasUpdate, tx *sql.Tx) (model.CategoriasUpdate, error) {
 
-	query, err := cr.connection.Prepare(`
+	query := `
 	UPDATE prod.categorias SET categorias_name = $1, categorias_data_atualizacao = CURRENT_TIMESTAMP 
 	WHERE categorias_id = $2
-	RETURNING categorias_id`)
-	if err != nil {
-		fmt.Println(err)
-		return model.CategoriasUpdate{}, err
-	}
-	defer query.Close()
+	RETURNING categorias_id`
 
-	err = query.QueryRow(categorias.Name, categorias.Id).Scan(&categorias.Id)
+	err := tx.QueryRow(query, categorias.Name, categorias.Id).Scan(&categorias.Id)
 	if err != nil {
 		fmt.Println(err)
 		return model.CategoriasUpdate{}, err
@@ -150,19 +143,14 @@ func (cr *categoriasRepository) UpdateCategoria(categorias model.CategoriasUpdat
 	return categorias, nil
 }
 
-func (cr *categoriasRepository) InactivateCategoria(id int) error {
-	query, err := cr.connection.Prepare(`
+func (cr *categoriasRepository) InactivateCategoria(id int, tx *sql.Tx) error {
+	query := `
 		UPDATE prod.categorias 
 		SET categorias_data_inativacao = CURRENT_TIMESTAMP, categorias_status = 'inativo' 
 		WHERE categorias_id = $1
-	`)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer query.Close()
+	`
 
-	_, err = query.Exec(id)
+	_, err := tx.Exec(query, id)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -171,19 +159,14 @@ func (cr *categoriasRepository) InactivateCategoria(id int) error {
 	return nil
 }
 
-func (cr *categoriasRepository) ActivateCategoria(id int) error {
-	query, err := cr.connection.Prepare(`
+func (cr *categoriasRepository) ActivateCategoria(id int, tx *sql.Tx) error {
+	query := `
 		UPDATE prod.categorias 
 		SET categorias_data_inativacao = NULL, categorias_status = 'ativo' 
 		WHERE categorias_id = $1
-	`)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	defer query.Close()
+	`
 
-	_, err = query.Exec(id)
+	_, err := tx.Exec(query, id)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -192,7 +175,7 @@ func (cr *categoriasRepository) ActivateCategoria(id int) error {
 	return nil
 }
 
-func (cr *categoriasRepository) ValidateCategoryName(nomeCategorias string, categoriaId *int) error {
+func (cr *categoriasRepository) ValidateCategoryName(nomeCategorias string, categoriaId *int, tx *sql.Tx) error {
 	var existingId int
 
 	// Define a query para verificar se já existe uma categoria com o mesmo nome
@@ -207,12 +190,13 @@ func (cr *categoriasRepository) ValidateCategoryName(nomeCategorias string, cate
 	}
 
 	// Executa a query e tenta escanear o resultado no existingId
-	err := cr.connection.QueryRow(query, args...).Scan(&existingId)
+	err := tx.QueryRow(query, args...).Scan(&existingId)
 
 	// Se não houver erro ao escanear, significa que a categoria já existe
 	if err == nil {
 		return fmt.Errorf("categoria já existe")
 	}
+
 
 	// Se houver erro, mas não for devido a uma categoria existente, retorna nil (nenhum erro encontrado)
 	return nil
@@ -251,6 +235,6 @@ func (cr *categoriasRepository) CountCategories(filters model.CategoriasFilters)
 }
 
 // ValidateCategory verifica se a categoria existe no banco de dados.
-func (cr *categoriasRepository) ValidateCategory(categoriaId int) error {
-	return helper.ValidateCategory(cr.connection, categoriaId)
+func (cr *categoriasRepository) ValidateCategory(categoriaId int, tx *sql.Tx) error {
+	return helper.ValidateCategory(tx, categoriaId)
 }

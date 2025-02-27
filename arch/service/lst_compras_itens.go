@@ -12,7 +12,6 @@ type LstComprasItensService interface {
 	GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error)
 	GetLstComprasItensByID(id int) (model.LstCompras_Itens, int, error)
 	CreateLstComprasItens(Item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, int, error)
-	ValidateProduct(productId int) error
 }
 
 type lstComprasItensService struct {
@@ -48,9 +47,6 @@ func (s *lstComprasItensService) GetLstComprasItensByID(id int) (model.LstCompra
 
 func (s *lstComprasItensService) CreateLstComprasItens(Item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, int, error) {
 
-	//TODO: breno
-	// Verifica se LstCompras_Id existe antes de inserir o item
-
 	exists, err := s.repository.CheckLstComprasExists(Item.LstCompras_Id, tx)
 	if err != nil {
 		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao verificar lista de compras: %v", err)
@@ -59,32 +55,22 @@ func (s *lstComprasItensService) CreateLstComprasItens(Item model.LstCompras_Ite
 		return model.LstCompras_Itens_Post{}, http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", Item.LstCompras_Id)
 	}
 	fmt.Println("Item:", Item.LstCompras_Id)
-	itemId, productName, err := s.repository.CreateLstComprasItem(Item, tx)
+	// Validar o produto
+	err = s.repository.ValidateProduct(Item.Product_Id, tx)
+	if err != nil {
+		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, err
+	}
 
+	insertedItem, err := s.repository.CreateLstComprasItem(Item, tx)
 	if err != nil {
 		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar Item: %v", err)
 	}
 
-	// Validar o produto
-	err = s.ValidateProduct(Item.Product_Id)
-	if err != nil {
-		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, err
-	}
-	Item.Id = itemId
-	Item.Product_Name = productName
 	// Atualizar os totais da lista de compras
-	err = s.repository.UpdateLstComprasTotals(Item.LstCompras_Id)
+	err = s.repository.UpdateLstComprasTotals(insertedItem.LstCompras_Id, tx)
 	if err != nil {
 		return model.LstCompras_Itens_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar totais: %v", err)
 	}
 
-	return Item, http.StatusCreated, nil
-}
-
-func (s *lstComprasItensService) ValidateProduct(productId int) error {
-	err := s.repository.ValidateProduct(productId)
-	if err != nil {
-		return err
-	}
-	return nil
+	return insertedItem, http.StatusCreated, nil
 }

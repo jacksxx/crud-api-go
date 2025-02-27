@@ -14,9 +14,10 @@ type UnidadesRepository interface {
 	GetUnidadesById(id int) (model.Unidades, error)
 	CreateUnidades(unidade model.UnidadesPost, tx *sql.Tx) (model.UnidadesPost, error)
 	UpdateUnidades(unidade model.UnidadesUpdate, tx *sql.Tx) (model.UnidadesUpdate, error)
-	ValidateUnitName(unidadeNome string, unidadeId *int) error
+	ValidateUnitName(unidadeNome string, unidadeId *int, tx *sql.Tx) error
+	ValidateUnitAbrev(unidadeAbrev string, unidadeId *int, tx *sql.Tx) error
 	CountUnits(filters model.UnidadesFilters) (int, error)
-	ValidateUnit(categoriaId int) error
+	ValidateUnit(categoriaId int, tx *sql.Tx) error
 }
 
 type unidadesRepository struct {
@@ -142,7 +143,7 @@ func (r *unidadesRepository) UpdateUnidades(unidade model.UnidadesUpdate, tx *sq
 	return unidade, nil
 }
 
-func (r *unidadesRepository) ValidateUnitName(unidadeNome string, unidadeId *int) error {
+func (r *unidadesRepository) ValidateUnitName(unidadeNome string, unidadeId *int, tx *sql.Tx) error {
 	var existingId int
 
 	// Define a query para verificar se já existe uma categoria com o mesmo nome
@@ -157,11 +158,37 @@ func (r *unidadesRepository) ValidateUnitName(unidadeNome string, unidadeId *int
 	}
 
 	// Executa a query e tenta escanear o resultado no existingId
-	err := r.connection.QueryRow(query, args...).Scan(&existingId)
+	err := tx.QueryRow(query, args...).Scan(&existingId)
 
 	// Se não houver erro ao escanear, significa que a categoria já existe
 	if err == nil {
 		return fmt.Errorf("unidade já existe")
+	}
+
+	// Se houver erro, mas não for devido a uma categoria existente, retorna nil (nenhum erro encontrado)
+	return nil
+}
+
+func (r *unidadesRepository) ValidateUnitAbrev(unidadeAbrev string, unidadeId *int, tx *sql.Tx) error {
+	var existingId int
+
+	// Define a query para verificar se já existe uma categoria com o mesmo nome
+	// Utiliza ILIKE para fazer a comparação sem diferenciar maiúsculas e minúsculas
+	query := `SELECT unidade_id FROM prod.unidades WHERE unidade_abreviacao ILIKE $1`
+	args := []interface{}{unidadeAbrev} // Parâmetro inicial da query (nome da categoria)
+
+	// Se for um update, adiciona uma condição para ignorar a própria categoria
+	if unidadeId != nil {
+		query += ` AND unidade_id <> $2` // Evita conflito com a própria categoria ao atualizar
+		args = append(args, *unidadeId)  // Adiciona o ID da categoria a ser ignorado nos argumentos da query
+	}
+
+	// Executa a query e tenta escanear o resultado no existingId
+	err := tx.QueryRow(query, args...).Scan(&existingId)
+
+	// Se não houver erro ao escanear, significa que a categoria já existe
+	if err == nil {
+		return fmt.Errorf("abreviação já existe")
 	}
 
 	// Se houver erro, mas não for devido a uma categoria existente, retorna nil (nenhum erro encontrado)
@@ -194,6 +221,6 @@ func (r *unidadesRepository) CountUnits(filters model.UnidadesFilters) (int, err
 	return count, nil
 }
 
-func (r *unidadesRepository) ValidateUnit(categoriaId int) error {
-	return helper.ValidateUnit(r.connection, categoriaId)
+func (r *unidadesRepository) ValidateUnit(categoriaId int, tx *sql.Tx) error {
+	return helper.ValidateUnit(tx, categoriaId)
 }

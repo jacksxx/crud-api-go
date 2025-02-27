@@ -5,29 +5,29 @@ import (
 	"fmt"
 )
 
-func ValidateUnit(db *sql.DB, unidadeId int) error {
+func ValidateUnit(tx *sql.Tx, unidadeId int) error {
 	var count int
 	query := `SELECT COUNT(1) FROM prod.unidades WHERE unidade_id = $1`
-	err := db.QueryRow(query, unidadeId).Scan(&count)
+	err := tx.QueryRow(query, unidadeId).Scan(&count)
 	if err != nil {
 		return err // Se houver erro ao consultar, retornamos o erro
 	}
 	if count == 0 {
-		return fmt.Errorf("unidade não encontrada") // Se count for 0, categoria não existe
+		return fmt.Errorf("unidade de id: %d  não encontrada", unidadeId) // Se count for 0, categoria não existe
 	}
 	return nil // Categoria existe
 }
 
 // ValidateCategory verifica se a categoria existe no banco de dados.
-func ValidateCategory(db *sql.DB, categoriaId int) error {
+func ValidateCategory(tx *sql.Tx, categoriaId int) error {
 	var count int
 	query := `SELECT COUNT(1) FROM prod.categorias WHERE categorias_id = $1`
-	err := db.QueryRow(query, categoriaId).Scan(&count)
+	err := tx.QueryRow(query, categoriaId).Scan(&count)
 	if err != nil {
 		return err // Se houver erro ao consultar, retornamos o erro
 	}
 	if count == 0 {
-		return fmt.Errorf("categoria não encontrada") // Se count for 0, categoria não existe
+		return fmt.Errorf("categoria de id: %d não encontrada", categoriaId) // Se count for 0, categoria não existe
 	}
 	return nil // Categoria existe
 }
@@ -41,7 +41,7 @@ func ValidateProduct(tx *sql.Tx, productId int) error {
 		return err // Se houver erro ao consultar, retornamos o erro
 	}
 	if count == 0 {
-		return fmt.Errorf("produto não encontrado") // Se count for 0, produto não existe
+		return fmt.Errorf("produto de id: %d não encontrado", productId) // Se count for 0, produto não existe
 	}
 	return nil // Produto existe
 }

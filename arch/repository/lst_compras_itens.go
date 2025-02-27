@@ -12,9 +12,9 @@ type LstComprasItensRepository interface {
 	BeginTransaction() (*sql.Tx, error)
 	GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error)
 	GetLstComprasItensById(id int) (model.LstCompras_Itens, error)
-	CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (int, string, error)
-	ValidateProduct(productId int) error
-	UpdateLstComprasTotals(lstComprasId int) error
+	CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, error)
+	ValidateProduct(productId int, tx *sql.Tx) error
+	UpdateLstComprasTotals(lstComprasId int, tx *sql.Tx) error
 	CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error)
 }
 
@@ -129,9 +129,9 @@ func (r *lstComprasItensRepository) GetLstComprasItensById(id int) (model.LstCom
 	return item, nil
 }
 
-func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (int, string, error) {
+func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, error) {
 	if item.LstCompras_Id == 0 {
-		return 0, "", fmt.Errorf("erro: LstCompras_Id inválido (0) ao inserir item")
+		return model.LstCompras_Itens_Post{}, fmt.Errorf("erro: LstCompras_Id inválido (0) ao inserir item")
 	}
 
 	var Id int
@@ -146,8 +146,7 @@ func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_I
 	// Executando a inserção do item
 	err := tx.QueryRow(query, item.LstCompras_Id, item.Product_Id, item.Quantidade, item.Preco).Scan(&Id)
 	if err != nil {
-		fmt.Println("Erro ao inserir item:", err)
-		return 0, "", err
+		return model.LstCompras_Itens_Post{}, err
 	}
 
 	// Agora, realizando a junção para pegar o nome do produto usando o ID do produto inserido
@@ -160,20 +159,21 @@ func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_I
 	// Executando a consulta para obter o nome do produto
 	err = tx.QueryRow(queryGetProduct, item.Product_Id).Scan(&ProductName)
 	if err != nil {
-		fmt.Println("Erro ao obter o nome do produto:", err)
-		return 0, "", err
+		return model.LstCompras_Itens_Post{}, err
 	}
 
-	return Id, ProductName, nil
+	item.Id = Id
+	item.Product_Name = ProductName
+
+	return item, nil
 }
 
-func (r *lstComprasItensRepository) ValidateProduct(productId int) error {
-	tx, _ := r.BeginTransaction()
+func (r *lstComprasItensRepository) ValidateProduct(productId int, tx *sql.Tx) error {
 	return helper.ValidateProduct(tx, productId)
 }
 
-func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int) error {
-	query := `
+func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int, tx *sql.Tx) error {
+	query, err := tx.Prepare(`
 		UPDATE prod.lst_compras
 		SET lst_compras_valor_total = (
 			SELECT COALESCE(SUM(lst_compras_itens_quantidade * lst_compras_itens_preco), 0)
@@ -186,9 +186,13 @@ func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int) err
 			WHERE lst_compras_id = $1
 		)
 		WHERE lst_compras_id = $1;
-	`
-
-	_, err := r.connection.Exec(query, lstComprasId)
+	`)
+	if err != nil {
+		return err
+	}
+	defer query.Close()
+	
+	_, err = query.Exec(lstComprasId)
 	if err != nil {
 		fmt.Println("Erro ao atualizar totais da lista de compras:", err)
 		return err
@@ -196,7 +200,8 @@ func (r *lstComprasItensRepository) UpdateLstComprasTotals(lstComprasId int) err
 
 	return nil
 }
-//TODO: breno
+
+// TODO: breno
 // Nova função para verificar se LstCompras_Id existe antes de inserir
 func (r *lstComprasItensRepository) CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error) {
 	var exists bool

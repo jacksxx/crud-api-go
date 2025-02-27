@@ -120,19 +120,24 @@ func (r *lstComprasRepository) GetLstComprasById(id int) (model.LstCompras, erro
 
 func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error) {
 	var Id int
+	var status, totalItens int
+	var totalPreco float64
 
 	query := `
 		INSERT INTO prod.lst_compras (lst_compras_name)
 		VALUES ($1)
-		RETURNING lst_compras_id
+		RETURNING lst_compras_id, lst_compras_status_id, lst_compras_total_itens, lst_compras_valor_total
 	`
 	// Executa a query e escaneia o ID do item inserido
-	err := tx.QueryRow(query, compras.Nome).Scan(&Id)
+	err := tx.QueryRow(query, compras.Nome).Scan(&Id, &status, &totalItens, &totalPreco)
 	if err != nil {
 		fmt.Println(err)
 		return model.LstCompras_Post{}, err
 	}
 	compras.Id = Id
+	compras.Status_Codigo = status
+	compras.Qtd_Itens = totalItens
+	compras.Total = totalPreco
 
 	return compras, nil
 }
@@ -171,11 +176,11 @@ func (r *lstComprasRepository) CountLstCompras(filters model.LstCompras_Filters)
 func (r *lstComprasRepository) TotaisLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error) {
 	// Busca os totais atualizados (status, quantidade de itens, e preço total)
 
-	var status, totalItens int
+	var totalItens int
 	var totalPreco float64
 
 	queryTotals, err := tx.Prepare(`
-		SELECT lst_compras_status_id, lst_compras_total_itens, lst_compras_valor_total
+		SELECT lst_compras_total_itens, lst_compras_valor_total
 		FROM prod.lst_compras
 		WHERE lst_compras_id = $1
 	`)
@@ -184,12 +189,12 @@ func (r *lstComprasRepository) TotaisLstCompras(compras model.LstCompras_Post, t
 	if err != nil {
 		return model.LstCompras_Post{}, fmt.Errorf("erro ao preparar a consulta para buscar totais atualizados: %v", err)
 	}
-	err = queryTotals.QueryRow(compras.Id).Scan(&status, &totalItens, &totalPreco)
+	err = queryTotals.QueryRow(compras.Id).Scan(&totalItens, &totalPreco)
 	if err != nil {
 		return model.LstCompras_Post{}, fmt.Errorf("erro ao buscar totais atualizados: %v", err)
 	}
 	// Atualiza a resposta com os totais calculados
-	compras.Status_Codigo = status
+
 	compras.Qtd_Itens = totalItens
 	compras.Total = totalPreco
 

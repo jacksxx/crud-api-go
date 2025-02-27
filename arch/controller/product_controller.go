@@ -96,13 +96,6 @@ func (pc *productController) CreateProducts(ctx echo.Context) error {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, validationErrors)
 	}
 
-	// Chama o serviço para verificar se a categoria existe
-	err := pc.service.ValidateCategory(product.Categoria_Id)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	// Chama o serviço para criar o produto no banco de dados.
 	insertedProduct, httpStatus, err := pc.service.CreateProducts(product)
 	if err != nil {
@@ -130,11 +123,6 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
-	err = pc.service.ValidateProduct(productId)
-	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	// Cria uma variável do tipo Product para armazenar os dados recebidos no corpo da requisição.
 	product := model.ProductUpdate{}
 
@@ -146,13 +134,6 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 
 	// Atribui o ID ao produto para garantir que estamos atualizando o item correto.
 	product.Id = productId
-
-	// Chama o serviço para verificar se a categoria existe
-	err = pc.service.ValidateCategory(product.Categoria_Id)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
 
 	// Chama o serviço para atualizar o produto no banco de dados.
 	updatedProduct, httpStatus, err := pc.service.UpdateProducts(product)
@@ -178,12 +159,6 @@ func (pc *productController) InactivateProduct(ctx echo.Context) error {
 		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
-	err = pc.service.ValidateProduct(productId)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	// Chama o serviço para excluir o produto
 	err = pc.service.InactivateProduct(productId)
 	if err != nil {
@@ -205,12 +180,6 @@ func (pc *productController) ActivateProduct(ctx echo.Context) error {
 	productId, err := strconv.Atoi(id)
 	if err != nil {
 		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
-	}
-
-	err = pc.service.ValidateProduct(productId)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
 	}
 
 	// Chama o serviço para excluir o produto

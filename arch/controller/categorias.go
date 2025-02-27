@@ -79,11 +79,6 @@ func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, validationErrors)
 	}
 
-	err := cc.service.ValidateCategoryName(categoria.Name, nil)
-	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	insertedCategories, httpStatus, err := cc.service.CreateCategorias(categoria)
 	if err != nil {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
@@ -103,13 +98,6 @@ func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
-	// Chama o serviço para verificar se a categoria existe
-	err = cc.service.ValidateCategory(categoriaId)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	categoria := model.CategoriasUpdate{}
 	validationErrors := helper.BindAndValidate(ctx, cc.validate, &categoria, cc.translator)
 	if len(validationErrors) > 0 {
@@ -117,11 +105,6 @@ func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	}
 
 	categoria.Id = categoriaId
-
-	err = cc.service.ValidateCategoryName(categoria.Name, &categoriaId)
-	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
 
 	updatedCategoty, httpStatus, err := cc.service.UpdateCategorias(categoria)
 	if err != nil {
@@ -145,17 +128,10 @@ func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
-	// Chama o serviço para verificar se a categoria existe
-	err = cc.service.ValidateCategory(categoriaId)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	// Chama o serviço para excluir o produto
 	err = cc.service.InactivateCategorias(categoriaId)
 	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar categoria"})
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{err.Error()})
 	}
 	// Retorna resposta de sucesso
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
@@ -173,17 +149,10 @@ func (cc *categoriaController) ActivateCategorias(ctx echo.Context) error {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
 	}
 
-	// Chama o serviço para verificar se a categoria existe
-	err = cc.service.ValidateCategory(categoriaId)
-	if err != nil {
-		// Retorna erro 400 caso o ID da categoria não exista
-		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{err.Error()})
-	}
-
 	// Chama o serviço para excluir o produto
 	err = cc.service.ActivateCategorias(categoriaId)
 	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar categoria"})
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{err.Error()})
 	}
 	// Retorna resposta de sucesso
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
