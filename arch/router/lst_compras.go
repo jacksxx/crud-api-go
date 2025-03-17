@@ -12,8 +12,8 @@ func LstComprasRouter(ctx *echo.Echo, baseRouter string, lstComprasController co
 
 	prodRouter.GET("", lstComprasController.GetLstCompras)
 	prodRouter.GET("/:id", lstComprasController.GetLstComprasByCodigo)
-	prodRouter.POST("", lstComprasController.PostAluguel)
-	// prodRouter.PATCH("/:id", lstComprasItensController.UpdateProducts)
+	prodRouter.POST("", lstComprasController.PostLstCompras)
+	prodRouter.PATCH("/:id", lstComprasController.UpdateLstCompras)
 	// prodRouter.PATCH("/inativar/:id", lstComprasItensController.InactivateProduct)
 	// prodRouter.PATCH("/ativar/:id", lstComprasItensController.ActivateProduct)
 }

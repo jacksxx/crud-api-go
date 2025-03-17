@@ -12,6 +12,7 @@ type LstComprasService interface {
 	GetLstCompras(filters model.LstCompras_Filters) (model.PaginatedResponse[model.LstCompras], int, error)
 	GetLstComprasById(id int) (model.LstCompras, int, error)
 	CreateLstCompras(compra model.LstCompras_Post) (model.LstCompras_Post, int, error)
+	UpdateLstCompras(compra model.LstCompras_Update) (model.LstCompras_Update, int, error)
 }
 
 type lstComprasService struct {
@@ -118,6 +119,127 @@ func (s *lstComprasService) CreateLstCompras(compra model.LstCompras_Post) (mode
 	// Confirmar a transação
 	if err := tx.Commit(); err != nil {
 		return model.LstCompras_Post{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
+	}
+
+	return compras, http.StatusCreated, nil
+}
+
+func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (model.LstCompras_Update, int, error) {
+	tx, err := s.repository.BeginTransaction()
+	if err != nil {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback()
+
+	compras, err := s.repository.UpdateLstCompras(compra, tx)
+	if err != nil {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar lista de compra: %v", err)
+	}
+	fmt.Println("COMPRAS: ", compras)
+	
+	if compras.Status_Codigo != 1 {
+		tx.Rollback()
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("a lista de Compra não se encontra em andamento")
+	}
+	if compras.Id == 0 {
+		tx.Rollback()
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
+	}
+
+	// Verificar se a lista de compras realmente existe antes de continuar
+	existe, err := s.repository.VerificarExistenciaLstCompras(compras.Id, tx)
+	if err != nil {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro: %v", err)
+	}
+	if !existe {
+		return model.LstCompras_Update{}, http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", compras.Id)
+	}
+	
+	for _, material := range compras.LstCompras_Itens {
+		
+		switch material.Acao {
+
+		case "adicionar":
+			materialPost := model.LstCompras_Itens_Post{
+				LstCompras_Id: compras.Id,
+				Product_Id:    material.Product_Id,
+				Quantidade:    material.Quantidade,
+				Preco:         material.Preco,
+			}			
+			_, httpStatus, err := s.itensComprasService.CreateLstComprasItens(materialPost, tx)
+
+			if err != nil {
+				return model.LstCompras_Update{}, http.StatusInternalServerError, err
+			}
+
+			if httpStatus != http.StatusCreated {
+				return model.LstCompras_Update{}, httpStatus, err
+			}
+
+		case "remover":
+			materialDelete := model.LstCompras_Itens_Delete{
+				LstCompras_Id: compras.Id,
+				Id:            material.Id,
+			}
+
+			httpStatus, err := s.itensComprasService.DeleteLstComprasItem(materialDelete, tx)
+
+			if err != nil {
+				return model.LstCompras_Update{}, http.StatusInternalServerError, err
+			}
+
+			if httpStatus != http.StatusOK {
+				return model.LstCompras_Update{}, httpStatus, err
+			}
+
+		case "atualizar":
+			materialUpdate := model.LstCompras_Itens_Update{
+				LstCompras_Id: compras.Id,
+				Id:            material.Id,
+				Product_Id:    material.Product_Id,
+				Quantidade:    material.Quantidade,
+				Preco:         material.Preco,
+				Acao:          material.Acao,
+			}
+			// Criar o item dentro da transação
+			_, httpStatus, err := s.itensComprasService.UpdateLstComprasItem(materialUpdate, tx)
+			if err != nil {
+				return model.LstCompras_Update{}, http.StatusInternalServerError, err
+			}
+
+			if httpStatus != http.StatusOK {
+				tx.Rollback()
+				return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar item de compra")
+			}
+		}
+
+	}
+
+	//Atualização do Total e Quantidade
+	var totalItens int
+	var totalPreco float64
+
+	queryTotals, err := tx.Prepare(`
+		SELECT lst_compras_total_itens, lst_compras_valor_total
+		FROM prod.lst_compras
+		WHERE lst_compras_id = $1
+	`)
+
+	if err != nil {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao preparar a consulta para buscar totais atualizados: %v", err)
+	}
+	err = queryTotals.QueryRow(compras.Id).Scan(&totalItens, &totalPreco)
+	if err != nil {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao buscar totais atualizados: %v", err)
+	}
+	// Atualiza a resposta com os totais calculados
+
+	compras.Qtd_Itens = totalItens
+	compras.Total = totalPreco
+
+	// Confirmar a transação
+	if err := tx.Commit(); err != nil {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 
 	return compras, http.StatusCreated, nil

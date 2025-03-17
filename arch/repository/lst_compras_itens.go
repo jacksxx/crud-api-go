@@ -10,12 +10,14 @@ import (
 
 type LstComprasItensRepository interface {
 	BeginTransaction() (*sql.Tx, error)
-	GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error)
+	GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int]map[string][]model.LstCompras_Itens, error)
 	GetLstComprasItensById(id int) (model.LstCompras_Itens, error)
 	CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, error)
+	UpdateLstComprasItem(item model.LstCompras_Itens_Update, tx *sql.Tx) (model.LstCompras_Itens_Update, error)
 	ValidateProduct(productId int, tx *sql.Tx) error
 	UpdateLstComprasTotals(lstComprasId int, tx *sql.Tx) error
 	CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error)
+	RemoverLstComprasItem(codigo int, tx *sql.Tx) (sql.Result, error)
 }
 
 type lstComprasItensRepository struct {
@@ -32,7 +34,7 @@ func (r *lstComprasItensRepository) BeginTransaction() (*sql.Tx, error) {
 	return r.connection.Begin()
 }
 
-func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int][]model.LstCompras_Itens, error) {
+func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_Itens_Filters) (map[int]map[string][]model.LstCompras_Itens, error) {
 	query := `
 		SELECT i.lst_compras_itens_id, i.lst_compras_id, i.products_id, p.products_name,
 			   u.unidade_descricao, u.unidade_abreviacao, 
@@ -84,15 +86,29 @@ func (r *lstComprasItensRepository) GetLstComprasItens(filters model.LstCompras_
 	}
 	defer rows.Close()
 
-	// Criar um mapa para agrupar os itens por lst_compras_id
-	groupedItems := make(map[int][]model.LstCompras_Itens)
+	// Criar um mapa para agrupar os itens por lst_compras_id e por item_check (true/false)
+	groupedItems := make(map[int]map[string][]model.LstCompras_Itens)
 
 	for rows.Next() {
 		var item model.LstCompras_Itens
 		if err := rows.Scan(&item.Id, &item.LstCompras_Id, &item.Product_Id, &item.Product_Name, &item.Unidade_Descricao, &item.Unidade_Abreviacao, &item.Quantidade, &item.Preco, &item.Item_Check, &item.Data_Cadastro, &item.Data_Atualizacao); err != nil {
 			return nil, err
 		}
-		groupedItems[item.LstCompras_Id] = append(groupedItems[item.LstCompras_Id], item)
+
+		// Inicializar o mapa interno se necessário
+		if _, exists := groupedItems[item.LstCompras_Id]; !exists {
+			groupedItems[item.LstCompras_Id] = map[string][]model.LstCompras_Itens{
+				"Comprados":     {},
+				"Não Comprados": {},
+			}
+		}
+
+		// Adicionar ao grupo correspondente
+		if item.Item_Check {
+			groupedItems[item.LstCompras_Id]["Comprados"] = append(groupedItems[item.LstCompras_Id]["Comprados"], item)
+		} else {
+			groupedItems[item.LstCompras_Id]["Não Comprados"] = append(groupedItems[item.LstCompras_Id]["Não Comprados"], item)
+		}
 	}
 
 	return groupedItems, nil
@@ -175,6 +191,55 @@ func (r *lstComprasItensRepository) CreateLstComprasItem(item model.LstCompras_I
 	return item, nil
 }
 
+func (r *lstComprasItensRepository) UpdateLstComprasItem(item model.LstCompras_Itens_Update, tx *sql.Tx) (model.LstCompras_Itens_Update, error) {
+	if item.LstCompras_Id == 0 {
+		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro: LstCompras_Id inválido (0) ao atualizar item")
+	}
+	
+	var ProductName, UnidadeName, UnidadeAbreviacao string
+	// Verifica se o item existe antes de atualizar
+	var exists bool
+	queryCheck := `SELECT EXISTS(SELECT 1 FROM prod.lst_compras_itens WHERE lst_compras_itens_id = $1)`
+	err := tx.QueryRow(queryCheck, item.Id).Scan(&exists)
+	if err != nil {
+		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao verificar existência do item: %w", err)
+	}
+	if !exists {
+		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao atualizar item: ID %d não encontrado", item.Id)
+	}
+
+	query := `		
+		UPDATE prod.lst_compras_itens
+		SET products_id = $1, lst_compras_itens_quantidade = $2, lst_compras_itens_preco = $3, lst_compras_itens_data_atualizacao = CURRENT_TIMESTAMP
+		WHERE lst_compras_itens_id = $4
+		RETURNING lst_compras_itens_id, lst_compras_id
+	`
+
+	err = tx.QueryRow(query, &item.Product_Id, &item.Quantidade, &item.Preco, &item.Id).Scan(&item.Id, &item.LstCompras_Id)
+	if err != nil {
+		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao atualizar item: %w", err)
+	}
+
+	queryGetProduct := `
+		SELECT p.products_name, u.unidade_descricao, u.unidade_abreviacao
+		FROM prod.products p
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
+		WHERE p.products_id = $1
+	`
+
+	// Executando a consulta para obter o nome do produto
+	err = tx.QueryRow(queryGetProduct, &item.Product_Id).Scan(&ProductName, &UnidadeName, &UnidadeAbreviacao)
+	if err != nil {
+		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao atualizar item: %w", err)
+	}
+
+	item.Product_Name = ProductName
+	item.Unidade_Descricao = UnidadeName
+	item.Unidade_Abreviacao = UnidadeAbreviacao
+	fmt.Println("Item:", item)
+	return item, nil
+}
+
 func (r *lstComprasItensRepository) ValidateProduct(productId int, tx *sql.Tx) error {
 	return helper.ValidateProduct(tx, productId)
 }
@@ -216,4 +281,9 @@ func (r *lstComprasItensRepository) CheckLstComprasExists(lstComprasId int, tx *
 	`
 	err := tx.QueryRow(query, lstComprasId).Scan(&exists)
 	return exists, err
+}
+
+func (r *lstComprasItensRepository) RemoverLstComprasItem(codigo int, tx *sql.Tx) (sql.Result, error) {
+	query := `DELETE FROM prod.lst_compras_itens WHERE lst_compras_itens_id = $1`
+	return tx.Exec(query, codigo)
 }
