@@ -196,7 +196,6 @@ func (r *lstComprasItensRepository) UpdateLstComprasItem(item model.LstCompras_I
 		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro: LstCompras_Id inválido (0) ao atualizar item")
 	}
 	
-	var ProductName, UnidadeName, UnidadeAbreviacao string
 	// Verifica se o item existe antes de atualizar
 	var exists bool
 	queryCheck := `SELECT EXISTS(SELECT 1 FROM prod.lst_compras_itens WHERE lst_compras_itens_id = $1)`
@@ -219,24 +218,7 @@ func (r *lstComprasItensRepository) UpdateLstComprasItem(item model.LstCompras_I
 	if err != nil {
 		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao atualizar item: %w", err)
 	}
-
-	queryGetProduct := `
-		SELECT p.products_name, u.unidade_descricao, u.unidade_abreviacao
-		FROM prod.products p
-		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
-		WHERE p.products_id = $1
-	`
-
-	// Executando a consulta para obter o nome do produto
-	err = tx.QueryRow(queryGetProduct, &item.Product_Id).Scan(&ProductName, &UnidadeName, &UnidadeAbreviacao)
-	if err != nil {
-		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao atualizar item: %w", err)
-	}
-
-	item.Product_Name = ProductName
-	item.Unidade_Descricao = UnidadeName
-	item.Unidade_Abreviacao = UnidadeAbreviacao
-	fmt.Println("Item:", item)
+	
 	return item, nil
 }
 

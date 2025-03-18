@@ -29,11 +29,8 @@ type LstCompras_Itens_Post struct {
 
 type LstCompras_Itens_Update struct {
 	Id                 int     `json:"id" db:"lst_compras_itens_id"`
-	LstCompras_Id      int     `json:"lst_compras_id" db:"lst_compras_id"`
-	Product_Name       string  `json:"product_name" db:"products_name"`
-	Product_Id         int     `json:"product_id" db:"products_id" validate:"required"`
-	Unidade_Descricao  string  `json:"unidade_descricao" db:"unidade_descricao"`
-	Unidade_Abreviacao string  `json:"unidade_abreviacao" db:"unidade_abreviacao"`
+	LstCompras_Id      int     `json:"lst_compras_id" db:"lst_compras_id"`	
+	Product_Id         int     `json:"product_id" db:"products_id" validate:"required"`	
 	Quantidade         int     `json:"quantidade" db:"lst_compras_itens_quantidade" validate:"required"`
 	Preco              float64 `json:"preco" db:"lst_compras_itens_preco" validate:"required"`
 	Acao               string  `json:"acao" validate:"required,oneof=adicionar remover atualizar"`

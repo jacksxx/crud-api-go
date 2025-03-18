@@ -136,7 +136,7 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar lista de compra: %v", err)
 	}
 	fmt.Println("COMPRAS: ", compras)
-	
+
 	if compras.Status_Codigo != 1 {
 		tx.Rollback()
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("a lista de Compra não se encontra em andamento")
@@ -154,9 +154,9 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 	if !existe {
 		return model.LstCompras_Update{}, http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", compras.Id)
 	}
-	
+
 	for _, material := range compras.LstCompras_Itens {
-		
+
 		switch material.Acao {
 
 		case "adicionar":
@@ -165,7 +165,7 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 				Product_Id:    material.Product_Id,
 				Quantidade:    material.Quantidade,
 				Preco:         material.Preco,
-			}			
+			}
 			_, httpStatus, err := s.itensComprasService.CreateLstComprasItens(materialPost, tx)
 
 			if err != nil {
@@ -219,21 +219,19 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 	var totalItens int
 	var totalPreco float64
 
-	queryTotals, err := tx.Prepare(`
-		SELECT lst_compras_total_itens, lst_compras_valor_total
-		FROM prod.lst_compras
+	// Agora busca os valores atualizados
+	err = tx.QueryRow(`
+		SELECT COALESCE(SUM(lst_compras_itens_quantidade), 0), 
+	   	COALESCE(SUM(lst_compras_itens_quantidade * lst_compras_itens_preco), 0)
+		FROM prod.lst_compras_itens
 		WHERE lst_compras_id = $1
-	`)
+	`, compras.Id).Scan(&totalItens, &totalPreco)
 
-	if err != nil {
-		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao preparar a consulta para buscar totais atualizados: %v", err)
-	}
-	err = queryTotals.QueryRow(compras.Id).Scan(&totalItens, &totalPreco)
 	if err != nil {
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao buscar totais atualizados: %v", err)
 	}
-	// Atualiza a resposta com os totais calculados
 
+	// Atualiza a resposta com os totais calculados
 	compras.Qtd_Itens = totalItens
 	compras.Total = totalPreco
 
