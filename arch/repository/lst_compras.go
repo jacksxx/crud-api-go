@@ -16,6 +16,8 @@ type LstComprasRepository interface {
 	CountLstCompras(filters model.LstCompras_Filters) (int, error)
 	TotaisLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
 	VerificarExistenciaLstCompras(lstComprasId int, tx *sql.Tx) (bool, error)
+	CancelLstCompras(compras model.LstCompras_Cancel, tx *sql.Tx) error
+	BuscarStatusLstCompras(lstComprasId int, tx *sql.Tx) (int, error)
 }
 
 type lstComprasRepository struct {
@@ -184,6 +186,35 @@ func (r *lstComprasRepository) UpdateLstCompras(compras model.LstCompras_Update,
 	compras.Status = status_string
 
 	return compras, nil
+}
+
+func (r *lstComprasRepository) CancelLstCompras(compras model.LstCompras_Cancel, tx *sql.Tx) error {
+
+	query := `
+		UPDATE prod.lst_compras
+		SET lst_compras_status_id = 3, lst_compras_data_atualizacao = CURRENT_TIMESTAMP
+		WHERE lst_compras_id = $1
+	`
+	_, err := tx.Exec(query, compras.Id)
+	if err != nil {
+		return fmt.Errorf("erro ao cancelar lista de compras: %w", err)
+	}
+
+	return nil
+}
+
+func (r *lstComprasRepository) BuscarStatusLstCompras(lstComprasId int, tx *sql.Tx) (int, error) {
+	query := `
+		SELECT lst_compras_status_id 
+		FROM prod.lst_compras 
+		WHERE lst_compras_id = $1
+	`
+	var status int
+	err := tx.QueryRow(query, lstComprasId).Scan(&status)
+	if err != nil {
+		return 0, fmt.Errorf("erro ao buscar status da lista de compras: %w", err)
+	}
+	return status, nil
 }
 
 func (r *lstComprasRepository) CountLstCompras(filters model.LstCompras_Filters) (int, error) {

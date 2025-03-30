@@ -44,6 +44,11 @@ type LstCompras_Finish struct {
 	LstCompras_Itens_Nao_Comprados *[]LstCompras_Itens_Finish `json:"lstcompras_itens_nao_comprados" validate:"required,dive"`
 }
 
+type LstCompras_Cancel struct {
+	Id            int    `json:"id" db:"lst_compras_id"`	
+	Status_Codigo int    `json:"status_codigo" db:"lst_compras_status_id"`
+}
+
 type LstCompras_Filters struct {
 	Nome          string `query:"nome" db:"lst_compras_name:ILIKE:a"`
 	Status_Codigo int    `query:"status_codigo" db:"lst_compras_status_id"`

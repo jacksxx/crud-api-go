@@ -13,6 +13,7 @@ type LstComprasService interface {
 	GetLstComprasById(id int) (model.LstCompras, int, error)
 	CreateLstCompras(compra model.LstCompras_Post) (model.LstCompras_Post, int, error)
 	UpdateLstCompras(compra model.LstCompras_Update) (model.LstCompras_Update, int, error)
+	CancelLstCompras(compra model.LstCompras_Cancel) (int, error)
 }
 
 type lstComprasService struct {
@@ -241,4 +242,48 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 	}
 
 	return compras, http.StatusCreated, nil
+}
+
+func (s *lstComprasService) CancelLstCompras(compra model.LstCompras_Cancel) (int, error) {
+	// Iniciar a transação
+	tx, err := s.repository.BeginTransaction()
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback()
+
+	// Verificar se a lista de compras realmente existe antes de continuar
+	existe, err := s.repository.VerificarExistenciaLstCompras(compra.Id, tx)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("erro: %v", err)
+	}
+	if !existe {
+		return http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", compra.Id)
+	}
+
+	// Buscar status antes de tentar cancelar
+	statusAtual, err := s.repository.BuscarStatusLstCompras(compra.Id, tx)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("erro ao buscar status da lista de compras: %v", err)
+	}
+
+	fmt.Printf("Status atual da lista de compras (ID: %d): %d\n", compra.Id, statusAtual)
+
+	// Verificar se a lista está em andamento
+	if statusAtual != 1 {
+		return http.StatusBadRequest, fmt.Errorf("erro: Lista de Compra Não Está Em Andamento")
+	}
+
+	// Atualizar status para "Cancelado"
+	err = s.repository.CancelLstCompras(compra, tx)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("erro: %v", err)
+	}
+
+	// Confirmar a transação
+	if err := tx.Commit(); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
+	}
+
+	return http.StatusOK, nil
 }

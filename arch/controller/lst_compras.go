@@ -17,6 +17,7 @@ type LstComprasController interface {
 	GetLstComprasByCodigo(ctx echo.Context) error
 	PostLstCompras(ctx echo.Context) error
 	UpdateLstCompras(ctx echo.Context) error
+	CancelLstCompras(ctx echo.Context) error
 }
 
 type lstComprasController struct {
@@ -114,4 +115,31 @@ func (c *lstComprasController) UpdateLstCompras(ctx echo.Context) error {
 
 	// Retorna o produto atualizado com status 200 (OK).
 	return helper.BuildResponse(ctx, httpStatus, updatedProduct, nil)
+}
+
+func (c *lstComprasController) CancelLstCompras(ctx echo.Context) error {
+	// Obtém o ID do produto a partir dos parâmetros da URL.
+	id := ctx.Param("id")
+	if id == "" {
+		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
+	}
+
+	lst_compras := model.LstCompras_Cancel{}
+	validationErrors := helper.BindAndValidate(ctx, c.validate, &lst_compras, c.translator)
+	if len(validationErrors) > 0 {
+		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, validationErrors)
+	}
+
+	lst_compras_Id, err := strconv.Atoi(id)
+	if err != nil || lst_compras_Id <= 0 {
+		helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id precisa ser um número"})
+	}
+	lst_compras.Id = lst_compras_Id
+
+	httpStatus, err := c.service.CancelLstCompras(lst_compras)
+	if err != nil {
+		return helper.BuildResponse(ctx, httpStatus, nil, []string{err.Error()})
+	}
+
+	return helper.BuildResponse(ctx, httpStatus, nil, nil)
 }
