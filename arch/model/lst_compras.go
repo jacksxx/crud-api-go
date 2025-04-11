@@ -34,19 +34,18 @@ type LstCompras_Update struct {
 }
 
 type LstCompras_Finish struct {
-	Id                             int                        `json:"id" db:"lst_compras_id"`
-	Nome                           string                     `json:"nome" db:"lst_compras_name"`
-	Status_Codigo                  int                        `json:"status_codigo" db:"lst_compras_status_id"`
-	Status                         string                     `json:"status" db:"lst_compras_status_name"`
-	Total                          float64                    `json:"total" db:"lst_compras_valor_total"`
-	Qtd_Itens                      int                        `json:"qtd_itens" db:"lst_compras_total_itens"`
-	LstCompras_Itens_Comprados     []LstCompras_Itens_Finish  `json:"lstcompras_itens_comprados" validate:"required,dive"`
-	LstCompras_Itens_Nao_Comprados *[]LstCompras_Itens_Finish `json:"lstcompras_itens_nao_comprados" validate:"required,dive"`
+	Id               int                       `json:"id" db:"lst_compras_id"`
+	Nome             string                    `json:"nome" db:"lst_compras_name"`
+	Status_Codigo    int                       `json:"status_codigo" db:"lst_compras_status_id"`
+	Status           string                    `json:"status" db:"lst_compras_status_name"`
+	Total            float64                   `json:"total" db:"lst_compras_valor_total"`
+	Qtd_Itens        int                       `json:"qtd_itens" db:"lst_compras_total_itens"`
+	LstCompras_Itens []LstCompras_Itens_Finish `json:"lstcompras_itens" validate:"required,dive"`
 }
 
 type LstCompras_Cancel struct {
-	Id            int    `json:"id" db:"lst_compras_id"`	
-	Status_Codigo int    `json:"status_codigo" db:"lst_compras_status_id"`
+	Id            int `json:"id" db:"lst_compras_id"`
+	Status_Codigo int `json:"status_codigo" db:"lst_compras_status_id"`
 }
 
 type LstCompras_Filters struct {

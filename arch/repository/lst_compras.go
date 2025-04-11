@@ -13,11 +13,13 @@ type LstComprasRepository interface {
 	GetLstComprasById(id int) (model.LstCompras, error)
 	CreateLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
 	UpdateLstCompras(compras model.LstCompras_Update, tx *sql.Tx) (model.LstCompras_Update, error)
+	FinishLstCompras(compras model.LstCompras_Finish, tx *sql.Tx) (model.LstCompras_Finish, error)
 	CountLstCompras(filters model.LstCompras_Filters) (int, error)
 	TotaisLstCompras(compras model.LstCompras_Post, tx *sql.Tx) (model.LstCompras_Post, error)
 	VerificarExistenciaLstCompras(lstComprasId int, tx *sql.Tx) (bool, error)
 	CancelLstCompras(compras model.LstCompras_Cancel, tx *sql.Tx) error
 	BuscarStatusLstCompras(lstComprasId int, tx *sql.Tx) (int, error)
+	VerificarStatusLstCompras(lstComprasId int, tx *sql.Tx) (int, error)
 }
 
 type lstComprasRepository struct {
@@ -159,7 +161,9 @@ func (r *lstComprasRepository) CreateLstCompras(compras model.LstCompras_Post, t
 
 func (r *lstComprasRepository) UpdateLstCompras(compras model.LstCompras_Update, tx *sql.Tx) (model.LstCompras_Update, error) {
 	var status_string string
-
+	// if compras.Status_Codigo != 1 {
+	// 	return model.LstCompras_Update{}, fmt.Errorf("A Lista de Compra não se encontra em andamento")
+	// }
 	query := `
 		UPDATE prod.lst_compras
 		SET lst_compras_name = $1, lst_compras_data_atualizacao = CURRENT_TIMESTAMP
@@ -181,6 +185,37 @@ func (r *lstComprasRepository) UpdateLstCompras(compras model.LstCompras_Update,
 	err = tx.QueryRow(queryA, compras.Status_Codigo).Scan(&status_string)
 	if err != nil {
 		return model.LstCompras_Update{}, err
+	}
+
+	compras.Status = status_string
+
+	return compras, nil
+}
+
+func (r *lstComprasRepository) FinishLstCompras(compras model.LstCompras_Finish, tx *sql.Tx) (model.LstCompras_Finish, error) {
+	var status_string string
+
+	query := `
+		UPDATE prod.lst_compras
+		SET lst_compras_status_id = 2, lst_compras_data_atualizacao = CURRENT_TIMESTAMP
+		WHERE lst_compras_id = $1
+		RETURNING lst_compras_status_id, lst_compras_total_itens, lst_compras_valor_total, lst_compras_name
+	`
+	// Executa a atualização, mas não altera o total de itens e o valor total
+	err := tx.QueryRow(query, compras.Id).Scan(&compras.Status_Codigo, &compras.Qtd_Itens, &compras.Total, &compras.Nome)
+	if err != nil {
+		return model.LstCompras_Finish{}, fmt.Errorf("erro ao atualizar lista de compras: %w", err)
+	}
+
+	queryA := `
+		SELECT lst_compras_status_name
+		FROM prod.lst_compras_status
+		WHERE lst_compras_status_id = $1
+	`
+	// Obtendo o nome do status atualizado
+	err = tx.QueryRow(queryA, compras.Status_Codigo).Scan(&status_string)
+	if err != nil {
+		return model.LstCompras_Finish{}, err
 	}
 
 	compras.Status = status_string
@@ -287,4 +322,22 @@ func (r *lstComprasRepository) VerificarExistenciaLstCompras(lstComprasId int, t
 	}
 
 	return exists, nil
+}
+
+func (r *lstComprasRepository) VerificarStatusLstCompras(lstComprasId int, tx *sql.Tx) (int, error) {
+	var status int
+
+	query := `
+		SELECT lst_compras_status_id 
+		FROM prod.lst_compras 
+		WHERE lst_compras_id = $1
+	`
+
+	err := tx.QueryRow(query, lstComprasId).Scan(&status)
+	if err != nil {
+
+		return 0, fmt.Errorf("erro ao verificar status da lista de compras: %v", err)
+	}
+
+	return status, nil
 }

@@ -15,5 +15,5 @@ func LstComprasRouter(ctx *echo.Echo, baseRouter string, lstComprasController co
 	prodRouter.POST("", lstComprasController.PostLstCompras)
 	prodRouter.PATCH("/:id", lstComprasController.UpdateLstCompras)
 	prodRouter.PATCH("/cancel/:id", lstComprasController.CancelLstCompras)
-	// prodRouter.PATCH("/ativar/:id", lstComprasItensController.ActivateProduct)
+	prodRouter.PATCH("/:id/finalizar", lstComprasController.FinishLstCompras)
 }

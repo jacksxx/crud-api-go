@@ -13,6 +13,7 @@ type LstComprasService interface {
 	GetLstComprasById(id int) (model.LstCompras, int, error)
 	CreateLstCompras(compra model.LstCompras_Post) (model.LstCompras_Post, int, error)
 	UpdateLstCompras(compra model.LstCompras_Update) (model.LstCompras_Update, int, error)
+	FinishLstCompras(compra model.LstCompras_Finish) (model.LstCompras_Finish, int, error)
 	CancelLstCompras(compra model.LstCompras_Cancel) (int, error)
 }
 
@@ -131,17 +132,22 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
+	
+	status, err := s.repository.VerificarStatusLstCompras(compra.Id, tx)
+	if status != 1 {
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("A Lista de Compra não se encontra em andamento")
+	}
 
 	compras, err := s.repository.UpdateLstCompras(compra, tx)
 	if err != nil {
-		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar lista de compra: %v", err)
+		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar lista de compra: %v", err)
 	}
 	fmt.Println("COMPRAS: ", compras)
 
-	if compras.Status_Codigo != 1 {
-		tx.Rollback()
-		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("a lista de Compra não se encontra em andamento")
-	}
+	// if compras.Status_Codigo != 1 {
+	// 	tx.Rollback()
+	// 	return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("a lista de Compra não se encontra em andamento")
+	// }
 	if compras.Id == 0 {
 		tx.Rollback()
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
@@ -239,6 +245,85 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 	// Confirmar a transação
 	if err := tx.Commit(); err != nil {
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
+	}
+
+	return compras, http.StatusCreated, nil
+}
+
+func (s *lstComprasService) FinishLstCompras(compra model.LstCompras_Finish) (model.LstCompras_Finish, int, error) {
+	tx, err := s.repository.BeginTransaction()
+	if err != nil {
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+	defer tx.Rollback()
+	status, err := s.repository.VerificarStatusLstCompras(compra.Id, tx)
+	if status != 1 {
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("A Lista de Compra não se encontra em andamento")
+	}
+	fmt.Println("COMPRA: ", compra)
+	compras, err := s.repository.FinishLstCompras(compra, tx)
+	if err != nil {
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao finalizar lista de compra: %v", err)
+	}
+	fmt.Println("COMPRAS: ", compras)
+	if compras.Id == 0 {
+		tx.Rollback()
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
+	}
+
+	// Verificar se a lista de compras realmente existe antes de continuar
+	existe, err := s.repository.VerificarExistenciaLstCompras(compras.Id, tx)
+	if err != nil {
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro: %v", err)
+	}
+	if !existe {
+		return model.LstCompras_Finish{}, http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", compras.Id)
+	}
+
+	var itensFinal []model.LstCompras_Itens_Finish
+	for _, material := range compras.LstCompras_Itens {
+		material.LstCompras_Id = compras.Id
+
+		// Criar o item dentro da transação
+		ItensFinalizados, httpStatus, err := s.itensComprasService.FinishLstComprasItem(material, tx)
+		if err != nil {
+			return model.LstCompras_Finish{}, http.StatusInternalServerError, err
+		}
+
+		if httpStatus != http.StatusOK {
+			tx.Rollback()
+			return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar item de compra")
+		}
+
+		// Adicionar o item à lista
+		itensFinal = append(itensFinal, ItensFinalizados)
+	}
+
+	compras.LstCompras_Itens = itensFinal
+
+	//Atualização do Total e Quantidade
+	var totalItens int
+	var totalPreco float64
+
+	// Agora busca os valores atualizados
+	err = tx.QueryRow(`
+		SELECT COALESCE(SUM(lst_compras_itens_quantidade), 0), 
+	   	COALESCE(SUM(lst_compras_itens_quantidade * lst_compras_itens_preco), 0)
+		FROM prod.lst_compras_itens
+		WHERE lst_compras_id = $1
+	`, compras.Id).Scan(&totalItens, &totalPreco)
+
+	if err != nil {
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao buscar totais atualizados: %v", err)
+	}
+
+	// Atualiza a resposta com os totais calculados
+	compras.Qtd_Itens = totalItens
+	compras.Total = totalPreco
+
+	// Confirmar a transação
+	if err := tx.Commit(); err != nil {
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 
 	return compras, http.StatusCreated, nil

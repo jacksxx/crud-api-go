@@ -14,6 +14,7 @@ type LstComprasItensService interface {
 	GetLstComprasItensByID(id int) (model.LstCompras_Itens, int, error)
 	CreateLstComprasItens(Item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, int, error)
 	UpdateLstComprasItem(Item model.LstCompras_Itens_Update, tx *sql.Tx) (model.LstCompras_Itens_Update, int, error)
+	FinishLstComprasItem(Item model.LstCompras_Itens_Finish, tx *sql.Tx) (model.LstCompras_Itens_Finish, int, error)
 	DeleteLstComprasItem(Item model.LstCompras_Itens_Delete, tx *sql.Tx) (int, error)
 }
 
@@ -102,6 +103,32 @@ func (s *lstComprasItensService) UpdateLstComprasItem(Item model.LstCompras_Iten
 	}
 
 	return updatedItem, http.StatusOK, nil
+}
+
+func (s *lstComprasItensService) FinishLstComprasItem(Item model.LstCompras_Itens_Finish, tx *sql.Tx) (model.LstCompras_Itens_Finish, int, error) {
+	exists, err := s.repository.CheckLstComprasExists(Item.LstCompras_Id, tx)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao verificar lista de compras: %v", err)
+	}
+	if !exists {
+		return model.LstCompras_Itens_Finish{}, http.StatusBadRequest, fmt.Errorf("erro: LstCompras_Id %d não encontrado", Item.LstCompras_Id)
+	}
+	err = s.repository.ValidateProduct(Item.Product_Id, tx)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, http.StatusInternalServerError, err
+	}
+
+	finishItem, err := s.repository.FinishLstComprasItem(Item, tx)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, http.StatusInternalServerError, err
+	}
+
+	err = s.repository.UpdateLstComprasTotals(finishItem.LstCompras_Id, tx)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar totais ao finalziar: %v", err)
+	}
+
+	return finishItem, http.StatusOK, nil
 }
 
 func (s *lstComprasItensService) DeleteLstComprasItem(Item model.LstCompras_Itens_Delete, tx *sql.Tx) (int, error) {

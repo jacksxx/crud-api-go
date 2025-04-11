@@ -14,6 +14,7 @@ type LstComprasItensRepository interface {
 	GetLstComprasItensById(id int) (model.LstCompras_Itens, error)
 	CreateLstComprasItem(item model.LstCompras_Itens_Post, tx *sql.Tx) (model.LstCompras_Itens_Post, error)
 	UpdateLstComprasItem(item model.LstCompras_Itens_Update, tx *sql.Tx) (model.LstCompras_Itens_Update, error)
+	FinishLstComprasItem(item model.LstCompras_Itens_Finish, tx *sql.Tx) (model.LstCompras_Itens_Finish, error)
 	ValidateProduct(productId int, tx *sql.Tx) error
 	UpdateLstComprasTotals(lstComprasId int, tx *sql.Tx) error
 	CheckLstComprasExists(lstComprasId int, tx *sql.Tx) (bool, error)
@@ -195,7 +196,7 @@ func (r *lstComprasItensRepository) UpdateLstComprasItem(item model.LstCompras_I
 	if item.LstCompras_Id == 0 {
 		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro: LstCompras_Id inválido (0) ao atualizar item")
 	}
-	
+
 	// Verifica se o item existe antes de atualizar
 	var exists bool
 	queryCheck := `SELECT EXISTS(SELECT 1 FROM prod.lst_compras_itens WHERE lst_compras_itens_id = $1)`
@@ -218,9 +219,59 @@ func (r *lstComprasItensRepository) UpdateLstComprasItem(item model.LstCompras_I
 	if err != nil {
 		return model.LstCompras_Itens_Update{}, fmt.Errorf("erro ao atualizar item: %w", err)
 	}
-	
+
 	return item, nil
 }
+
+func (r *lstComprasItensRepository) FinishLstComprasItem(item model.LstCompras_Itens_Finish, tx *sql.Tx) (model.LstCompras_Itens_Finish, error) {
+	if item.LstCompras_Id == 0 {
+		return model.LstCompras_Itens_Finish{}, fmt.Errorf("erro: LstCompras_Id inválido (0) ao finalizar item")
+	}
+	// Verifica se o item existe antes de atualizar
+	var exists bool
+	queryCheck := `SELECT EXISTS(SELECT 1 FROM prod.lst_compras_itens WHERE lst_compras_itens_id = $1)`
+	err := tx.QueryRow(queryCheck, item.Id).Scan(&exists)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, fmt.Errorf("erro ao verificar existência do item: %w", err)
+	}
+	if !exists {
+		return model.LstCompras_Itens_Finish{}, fmt.Errorf("erro ao finalizar item: ID %d não encontrado", item.Id)
+	}
+
+	query := `		
+		UPDATE prod.lst_compras_itens
+		SET lst_compras_itens_quantidade = $1, lst_compras_itens_preco = $2, lst_compras_itens_comprado = $3
+		WHERE lst_compras_itens_id = $4
+		RETURNING lst_compras_itens_id, lst_compras_id
+	`
+
+	err = tx.QueryRow(query, &item.Quantidade, &item.Preco, &item.Item_Check, &item.Id).Scan(&item.Id, &item.LstCompras_Id)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, fmt.Errorf("erro ao finalizar item: %w", err)
+	}
+	// Agora, realizando a junção para pegar o nome do produto usando o ID do produto inserido
+	queryGetProduct := `
+		SELECT p.products_name, u.unidade_descricao, u.unidade_abreviacao
+		FROM prod.products p
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
+		WHERE p.products_id = $1
+	`
+	var ProductName, UnidadeName, UnidadeAbreviacao string
+
+	// Executando a consulta para obter o nome do produto
+	err = tx.QueryRow(queryGetProduct, item.Product_Id).Scan(&ProductName, &UnidadeName, &UnidadeAbreviacao)
+	if err != nil {
+		return model.LstCompras_Itens_Finish{}, err
+	}
+
+	item.Product_Name = ProductName
+	item.Unidade_Descricao = UnidadeName
+	item.Unidade_Abreviacao = UnidadeAbreviacao
+
+	return item, nil
+}
+
+//Resourcers
 
 func (r *lstComprasItensRepository) ValidateProduct(productId int, tx *sql.Tx) error {
 	return helper.ValidateProduct(tx, productId)
