@@ -50,6 +50,11 @@ func main() {
 	CategoryController := controller.NewCategoriaController(CategoryService, validate, translator)
 	router.CategoriesRouter(server, baseRouter+"/categories", CategoryController)
 
+	SubcategoryRepository := repository.NewSubcategoriasRepository(dbConnection)
+	SubcategoryService := service.NewSubcategoriaService(SubcategoryRepository)
+	SubcategoryController := controller.NewSubcategoriaController(SubcategoryService, validate, translator)
+	router.SubcategoriesRouter(server, baseRouter+"/subcategories", SubcategoryController)
+
 	UnitRepository := repository.NewUnidadesRepository(dbConnection)
 	UnitService := service.NewUnidadesService(UnitRepository)
 	UnitController := controller.NewUnitController(UnitService, validate, translator)
