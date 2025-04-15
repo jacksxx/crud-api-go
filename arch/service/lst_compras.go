@@ -132,10 +132,10 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
-	
+
 	status, err := s.repository.VerificarStatusLstCompras(compra.Id, tx)
 	if status != 1 {
-		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("A Lista de Compra não se encontra em andamento")
+		return model.LstCompras_Update{}, http.StatusInternalServerError, err
 	}
 
 	compras, err := s.repository.UpdateLstCompras(compra, tx)
@@ -258,7 +258,7 @@ func (s *lstComprasService) FinishLstCompras(compra model.LstCompras_Finish) (mo
 	defer tx.Rollback()
 	status, err := s.repository.VerificarStatusLstCompras(compra.Id, tx)
 	if status != 1 {
-		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("A Lista de Compra não se encontra em andamento")
+		return model.LstCompras_Finish{}, http.StatusInternalServerError, err
 	}
 	fmt.Println("COMPRA: ", compra)
 	compras, err := s.repository.FinishLstCompras(compra, tx)

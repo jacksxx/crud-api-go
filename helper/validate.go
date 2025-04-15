@@ -32,6 +32,20 @@ func ValidateCategory(tx *sql.Tx, categoriaId int) error {
 	return nil // Categoria existe
 }
 
+// ValidateSubCategory verifica se a subcategoria existe no banco de dados.
+func ValidateSubCategory(tx *sql.Tx, subcategoriaId int) error {
+	var count int
+	query := `SELECT COUNT(1) FROM prod.subcategorias WHERE subcategorias_id = $1`
+	err := tx.QueryRow(query, subcategoriaId).Scan(&count)
+	if err != nil {
+		return err // Se houver erro ao consultar, retornamos o erro
+	}
+	if count == 0 {
+		return fmt.Errorf("subcategoria de id: %d não encontrada", subcategoriaId) // Se count for 0, categoria não existe
+	}
+	return nil // Categoria existe
+}
+
 // ValidateProduct verifica se o producto existe no banco de dados.
 func ValidateProduct(tx *sql.Tx, productId int) error {
 	var count int

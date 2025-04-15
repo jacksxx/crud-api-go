@@ -18,8 +18,10 @@ type ProductRepository interface {
 	InactivateProduct(id int, tx *sql.Tx) error
 	ActivateProduct(id int, tx *sql.Tx) error
 	ValidateCategory(categoriaId int, tx *sql.Tx) error
+	ValidateSubCategory(subcategoriaId int, tx *sql.Tx) error
 	CountProducts(filters model.ProductFilters) (int, error)
 	ValidateProduct(productId int, tx *sql.Tx) error
+	VerificarStatusProduto(produtoID int, tx *sql.Tx) (string, error)
 }
 
 // ProductRepository representa a estrutura do repositório de produtos, armazenando a conexão com o banco de dados
@@ -41,10 +43,11 @@ func (r *productRepository) BeginTransaction() (*sql.Tx, error) {
 // GetProducts busca todos os produtos no banco de dados e retorna uma lista de produtos
 func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.Product, error) {
 	query := `
-		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.unidade_id, u.unidade_descricao, u.unidade_abreviacao, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
+		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.subcategorias_id, s.subcategorias_name, p.unidade_id, u.unidade_descricao, u.unidade_abreviacao, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
 		FROM prod.products p
 		JOIN prod.categorias c ON p.categorias_id = c.categorias_id
-		JOIN prod.unidades u ON p.unidade_id = u.unidade_id`
+		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
+		JOIN prod.subcategorias s ON p.subcategorias_id = s.subcategorias_id`
 	var conditions []string
 	var args []interface{}
 	argIndex := 1
@@ -96,7 +99,7 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 
 	for rows.Next() {
 		var product model.Product
-		if err := rows.Scan(&product.Id, &product.Name, &product.Price, &product.Categoria_Id, &product.Categoria_Name, &product.Unidade_Id, &product.Unidade_Descricao, &product.Unidade_Abreviacao, &product.Data_Cadastro, &product.Data_Atualizacao, &product.Data_Inativacao, &product.Status); err != nil {
+		if err := rows.Scan(&product.Id, &product.Name, &product.Price, &product.Categoria_Id, &product.Categoria_Name, &product.SubCategoria_Id, &product.SubCategoria_Name, &product.Unidade_Id, &product.Unidade_Descricao, &product.Unidade_Abreviacao, &product.Data_Cadastro, &product.Data_Atualizacao, &product.Data_Inativacao, &product.Status); err != nil {
 			return nil, err
 		}
 		productList = append(productList, product)
@@ -109,10 +112,11 @@ func (pr *productRepository) GetProducts(filters model.ProductFilters) ([]model.
 func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 	// Prepara a query SQL para evitar SQL Injection
 	query, err := pr.connection.Prepare(`
-		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.unidade_id, u.unidade_descricao, u.unidade_abreviacao, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
+		SELECT p.products_id, p.products_name, p.products_price, p.categorias_id, c.categorias_name, p.subcategorias_id, s.subcategorias_name, p.unidade_id, u.unidade_descricao, u.unidade_abreviacao, p.products_data_cadastro, p.products_data_atualizacao, p.products_data_inativacao, p.products_status
 		FROM prod.products p
 		JOIN prod.categorias c ON p.categorias_id = c.categorias_id
 		JOIN prod.unidades u ON p.unidade_id = u.unidade_id
+		JOIN prod.subcategorias s ON p.subcategorias_id = s.subcategorias_id
 		WHERE p.products_id = $1
 	`)
 	if err != nil {
@@ -128,6 +132,8 @@ func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 		&product.Price,
 		&product.Categoria_Id,
 		&product.Categoria_Name,
+		&product.SubCategoria_Id,
+		&product.SubCategoria_Name,
 		&product.Unidade_Id,
 		&product.Unidade_Descricao,
 		&product.Unidade_Abreviacao,
@@ -154,19 +160,18 @@ func (pr *productRepository) GetProductByID(id int) (model.Product, error) {
 // CreateProducts insere um novo produto no banco de dados e retorna o ID do produto inserido
 func (pr *productRepository) CreateProducts(product model.ProductPost, tx *sql.Tx) (model.ProductPost, error) {
 	var Id int
-	var CategoriaName string
-	var UnidadeDescricao string
+	var CategoriaName, UnidadeDescricao, SubCategoriaName string
 
 	// Prepara a query de inserção para evitar SQL Injection
 	query := `
-		INSERT INTO prod.products (products_name, products_price, categorias_id, unidade_id)
-		VALUES ($1, $2, $3, $4)
-		RETURNING products_id, categorias_id, unidade_id;
+		INSERT INTO prod.products (products_name, products_price, categorias_id, subcategorias_id, unidade_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING products_id, categorias_id, subcategorias_id, unidade_id;
 	`
 
 	// Executa a query e escaneia o ID do produto e os IDs da categoria e unidade associadas
-	err := tx.QueryRow(query, product.Name, product.Price, product.Categoria_Id, product.Unidade_Id).
-		Scan(&Id, &product.Categoria_Id, &product.Unidade_Id)
+	err := tx.QueryRow(query, product.Name, product.Price, product.Categoria_Id, product.SubCategoria_Id, product.Unidade_Id).
+		Scan(&Id, &product.Categoria_Id, &product.SubCategoria_Id, &product.Unidade_Id)
 	if err != nil {
 		fmt.Println(err)                // Log do erro
 		return model.ProductPost{}, err // Retorna erro caso ocorra uma falha na inserção
@@ -184,6 +189,17 @@ func (pr *productRepository) CreateProducts(product model.ProductPost, tx *sql.T
 		return model.ProductPost{}, err // Retorna erro caso não consiga recuperar o nome da categoria
 	}
 
+	// Agora que o produto foi inserido, vamos buscar o nome da categoria com base no categoria_id
+	err = tx.QueryRow(`
+		SELECT subcategorias_name
+		FROM prod.subcategorias
+		WHERE subcategorias_id = $1
+	`, product.SubCategoria_Id).Scan(&SubCategoriaName)
+
+	if err != nil {
+		fmt.Println(err)                // Log do erro
+		return model.ProductPost{}, err // Retorna erro caso não consiga recuperar o nome da categoria
+	}
 	// Agora, buscar a descrição da unidade com base no unidade_id
 	err = tx.QueryRow(`
 		SELECT unidade_descricao
@@ -199,6 +215,7 @@ func (pr *productRepository) CreateProducts(product model.ProductPost, tx *sql.T
 	// Atribui o nome da categoria e a descrição da unidade aos campos do produto
 	product.Id = Id
 	product.Categoria_Name = CategoriaName
+	product.SubCategoria_Name = SubCategoriaName
 	product.Unidade_Descricao = UnidadeDescricao
 
 	return product, nil // Retorna o produto com o ID, nome da categoria e descrição da unidade
@@ -210,14 +227,14 @@ func (pr *productRepository) UpdateProducts(product model.ProductUpdate, tx *sql
 	// Prepara a query de atualização
 	query := `
 		UPDATE prod.products
-		SET products_name = $1, products_price = $2, categorias_id = $3, products_data_atualizacao = CURRENT_TIMESTAMP
-		WHERE products_id = $4
-		RETURNING products_id, categorias_id, unidade_id;
+		SET products_name = $1, products_price = $2, categorias_id = $3, subcategorias_id = $4, unidade_id = $5, products_data_atualizacao = CURRENT_TIMESTAMP
+		WHERE products_id = $6
+		RETURNING products_id, categorias_id, subcategorias_id, unidade_id;
 	`
 	// Executa a query de atualização e escaneia os valores retornados
-	var categoriaId, unidadeId int
-	err := tx.QueryRow(query, product.Name, product.Price, product.Categoria_Id, product.Id).
-		Scan(&product.Id, &categoriaId, &unidadeId)
+	var categoriaId, subcategoriaId, unidadeId int
+	err := tx.QueryRow(query, product.Name, product.Price, product.Categoria_Id, product.SubCategoria_Id, product.Unidade_Id, product.Id).
+		Scan(&product.Id, &categoriaId, &subcategoriaId, &unidadeId)
 	if err != nil {
 		fmt.Println("Erro ao executar a query de atualização:", err)
 		return model.ProductUpdate{}, err // Retorna erro caso ocorra uma falha na atualização
@@ -231,6 +248,12 @@ func (pr *productRepository) UpdateProducts(product model.ProductUpdate, tx *sql
 		return model.ProductUpdate{}, err // Retorna erro caso não consiga recuperar o nome da categoria
 	}
 
+	var subcategoriaName string
+	err = tx.QueryRow("SELECT subcategorias_name FROM prod.subcategorias WHERE subcategorias_id = $1", subcategoriaId).Scan(&subcategoriaName)
+	if err != nil {
+		fmt.Println("Erro ao buscar o nome da subcategoria:", err)
+		return model.ProductUpdate{}, err // Retorna erro caso não consiga recuperar o nome da categoria
+	}
 	// Busca a descrição da unidade com base no unidadeId
 	var unidadeDescricao string
 	err = tx.QueryRow("SELECT unidade_descricao FROM prod.unidades WHERE unidade_id = $1", unidadeId).Scan(&unidadeDescricao)
@@ -241,6 +264,7 @@ func (pr *productRepository) UpdateProducts(product model.ProductUpdate, tx *sql
 
 	// Atualiza os campos do produto com os valores obtidos
 	product.Categoria_Name = categoriaName
+	product.SubCategoria_Name = subcategoriaName
 	product.Unidade_Descricao = unidadeDescricao
 
 	// Retorna o produto com as informações atualizadas
@@ -284,6 +308,11 @@ func (pr *productRepository) ActivateProduct(id int, tx *sql.Tx) error {
 // ValidateCategory verifica se a categoria existe no banco de dados.
 func (pr *productRepository) ValidateCategory(categoriaId int, tx *sql.Tx) error {
 	return helper.ValidateCategory(tx, categoriaId)
+}
+
+// ValidateCategory verifica se a categoria existe no banco de dados.
+func (pr *productRepository) ValidateSubCategory(subcategoriaId int, tx *sql.Tx) error {
+	return helper.ValidateSubCategory(tx, subcategoriaId)
 }
 
 func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, error) {
@@ -331,4 +360,22 @@ func (pr *productRepository) CountProducts(filters model.ProductFilters) (int, e
 
 func (pr *productRepository) ValidateProduct(productId int, tx *sql.Tx) error {
 	return helper.ValidateProduct(tx, productId)
+}
+
+func (r *productRepository) VerificarStatusProduto(produtoID int, tx *sql.Tx) (string, error) {
+	var status string
+
+	query := `
+		SELECT products_status
+		FROM prod.products 
+		WHERE products_id = $1
+	`
+
+	err := tx.QueryRow(query, produtoID).Scan(&status)
+	if err != nil {
+
+		return "err", fmt.Errorf("erro ao verificar status do produto: %v", err)
+	}
+
+	return status, nil
 }

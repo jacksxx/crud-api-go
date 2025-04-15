@@ -162,7 +162,7 @@ func (pc *productController) InactivateProduct(ctx echo.Context) error {
 	// Chama o serviço para excluir o produto
 	err = pc.service.InactivateProduct(productId)
 	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar produto"})
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{err.Error()})
 	}
 
 	// Retorna resposta de sucesso
@@ -185,7 +185,7 @@ func (pc *productController) ActivateProduct(ctx echo.Context) error {
 	// Chama o serviço para excluir o produto
 	err = pc.service.ActivateProduct(productId)
 	if err != nil {
-		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{"Erro ao deletar produto"})
+		return helper.BuildResponse(ctx, http.StatusInternalServerError, nil, []string{err.Error()})
 	}
 
 	// Retorna resposta de sucesso

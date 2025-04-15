@@ -41,6 +41,64 @@ VALUES
     ('Produtos de Limpeza');
 
 CREATE TABLE
+    IF NOT EXISTS prod.subcategorias (
+        subcategorias_id SERIAL PRIMARY KEY,
+        subcategorias_name VARCHAR(200) NOT NULL,
+        categorias_id INT NOT NULL REFERENCES prod.categorias (categorias_id) ON DELETE CASCADE,
+        subcategorias_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        subcategorias_data_atualizacao TIMESTAMP NULL,
+        subcategorias_data_inativacao TIMESTAMP NULL,
+        subcategorias_status VARCHAR(50) NOT NULL DEFAULT 'ativo'
+    );
+
+INSERT INTO
+    prod.subcategorias (subcategorias_name, categorias_id)
+VALUES
+    ('Refrigerantes', 1),
+    ('Sucos', 1),
+    ('Águas', 1),
+    ('Cervejas', 1),
+    ('Destilados', 1),
+    ('Salgadinhos', 2),
+    ('Sanduíches', 2),
+    ('Snacks Saudáveis', 2),
+    ('Barrinhas', 2),
+    ('Chocolates', 3),
+    ('Balas e Gomas', 3),
+    ('Bolos', 3),
+    ('Sorvetes', 3),
+    ('Pudins e Mousses', 3),
+    ('Pães', 4),
+    ('Bolos Caseiros', 4),
+    ('Tortas', 4),
+    ('Biscoitos', 4),
+    ('Arroz', 5),
+    ('Feijão', 5),
+    ('Massas', 5),
+    ('Farinha', 5),
+    ('Óleos', 5),
+    ('Temperos', 5),
+    ('Carnes Bovinas', 6),
+    ('Aves', 6),
+    ('Peixes e Frutos do Mar', 6),
+    ('Ovos', 6),
+    ('Proteínas Vegetais', 6),
+    ('Frutas Frescas', 7),
+    ('Verduras e Legumes', 7),
+    ('Orgânicos', 7),
+    ('Temperos Naturais', 7),
+    ('Ervas e Brotos', 7),
+    ('Produtos de Hortifruti', 7),
+    ('Desinfetantes', 8),
+    ('Detergentes', 8),
+    ('Sabões e Sabonetes', 8),
+    ('Esponjas e Panos', 8),
+    ('Amaciantes', 8),
+    ('Desengordurantes', 8),
+    ('Limpa Vidros', 8),
+    ('Multiuso', 8);
+
+CREATE TABLE
     IF NOT EXISTS prod.unidades (
         unidade_id SERIAL PRIMARY KEY,
         unidade_descricao VARCHAR(100) NOT NULL,
@@ -73,6 +131,7 @@ CREATE TABLE
         products_data_inativacao TIMESTAMP NULL,
         products_status VARCHAR(50) NOT NULL DEFAULT 'ativo',
         categorias_id INT NOT NULL REFERENCES prod.categorias (categorias_id) ON DELETE CASCADE,
+        subcategorias_id INT REFERENCES prod.subcategorias (subcategorias_id) ON DELETE SET NULL,
         unidade_id INT NOT NULL REFERENCES prod.unidades (unidade_id) ON DELETE CASCADE
     );
 
@@ -82,65 +141,66 @@ INSERT INTO
         products_name,
         products_price,
         categorias_id,
+        subcategorias_id,
         unidade_id
     )
 VALUES
     -- Bebidas (Litros ou Mililitros)
-    ('Coca-Cola', 4.50, 1, 2), -- Litro
-    ('Suco de Laranja', 3.20, 1, 3), -- Mililitro
-    ('Água Mineral', 1.00, 1, 2), -- Litro
-    ('Cerveja Heineken', 6.80, 1, 3), -- Mililitro
-    ('Refrigerante Guaraná', 3.90, 1, 2), -- Litro
-    ('Chá Gelado', 2.80, 1, 3), -- Mililitro
+    ('Coca-Cola', 4.50, 1, 2, 2), -- Litro (Refrigerantes)
+    ('Suco de Laranja', 3.20, 1, 3, 2), -- Mililitro (Sucos)
+    ('Água Mineral', 1.00, 1, 2, 2), -- Litro (Águas)
+    ('Cerveja Heineken', 6.80, 1, 3, 2), -- Mililitro (Cervejas)
+    ('Refrigerante Guaraná', 3.90, 1, 2, 2), -- Litro (Refrigerantes)
+    ('Chá Gelado', 2.80, 1, 3, 2), -- Mililitro (Sucos)
     -- Lanches (Unidade)
-    ('X-Tudo', 8.90, 2, 1),
-    ('Pastel de Queijo', 4.50, 2, 1),
-    ('Coxinha', 3.00, 2, 1),
-    ('Hambúrguer', 7.99, 2, 1),
-    ('Misto Quente', 5.00, 2, 1),
-    ('Esfiha', 4.25, 2, 1),
+    ('X-Tudo', 8.90, 2, 1, 1), -- (Salgadinhos)
+    ('Pastel de Queijo', 4.50, 2, 1, 1), -- (Salgadinhos)
+    ('Coxinha', 3.00, 2, 1, 1), -- (Salgadinhos)
+    ('Hambúrguer', 7.99, 2, 1, 1), -- (Sanduíches)
+    ('Misto Quente', 5.00, 2, 1, 1), -- (Sanduíches)
+    ('Esfiha', 4.25, 2, 1, 1), -- (Salgadinhos)
     -- Doces e Sobremesas (Grama ou Unidade)
-    ('Chocolate ao Leite', 7.50, 3, 5), -- Grama
-    ('Sorvete de Morango', 5.25, 3, 3), -- Mililitro
-    ('Pudim', 4.75, 3, 1),
-    ('Brigadeiro', 2.50, 3, 5), -- Grama
-    ('Torta de Limão', 6.90, 3, 1),
-    ('Bolo de Chocolate', 9.99, 3, 1),
+    ('Chocolate ao Leite', 7.50, 3, 5, 5), -- Grama (Chocolates)
+    ('Sorvete de Morango', 5.25, 3, 3, 2), -- Mililitro (Sorvetes)
+    ('Pudim', 4.75, 3, 1, 1), -- (Bolos)
+    ('Brigadeiro', 2.50, 3, 5, 5), -- Grama (Balas e Gomas)
+    ('Torta de Limão', 6.90, 3, 1, 1), -- (Bolos)
+    ('Bolo de Chocolate', 9.99, 3, 1, 1), -- (Bolos)
     -- Produtos de Padaria (Unidade)
-    ('Pão Francês', 0.80, 4, 1),
-    ('Croissant', 3.99, 4, 1),
-    ('Bolo de Cenoura', 10.50, 4, 1),
-    ('Rosquinha', 2.75, 4, 1),
-    ('Pão de Queijo', 4.50, 4, 1),
-    ('Baguete', 5.20, 4, 1),
+    ('Pão Francês', 0.80, 4, 1, 1), -- (Pães)
+    ('Croissant', 3.99, 4, 1, 1), -- (Pães)
+    ('Bolo de Cenoura', 10.50, 4, 1, 1), -- (Bolos Caseiros)
+    ('Rosquinha', 2.75, 4, 1, 1), -- (Biscoitos)
+    ('Pão de Queijo', 4.50, 4, 1, 1), -- (Pães)
+    ('Baguete', 5.20, 4, 1, 1), -- (Pães)
     -- Alimentos Básicos (Kg ou Unidade)
-    ('Arroz 5kg', 20.00, 5, 4), -- Kg
-    ('Feijão 1kg', 9.50, 5, 4), -- Kg
-    ('Macarrão Espaguete', 3.25, 5, 1),
-    ('Óleo de Soja', 7.99, 5, 2), -- Litro
-    ('Sal', 2.30, 5, 4), -- Kg
-    ('Açúcar', 4.00, 5, 4), -- Kg
+    ('Arroz 5kg', 20.00, 5, 4, 4), -- Kg (Arroz)
+    ('Feijão 1kg', 9.50, 5, 4, 4), -- Kg (Feijão)
+    ('Macarrão Espaguete', 3.25, 5, 1, 1), -- (Massas)
+    ('Óleo de Soja', 7.99, 5, 2, 2), -- Litro (Óleos)
+    ('Sal', 2.30, 5, 4, 4), -- Kg (Temperos)
+    ('Açúcar', 4.00, 5, 4, 4), -- Kg (Açúcar)
     -- Carnes e Proteínas (Kg)
-    ('Filé de Frango 1kg', 18.50, 6, 4), -- Kg
-    ('Carne Moída 1kg', 27.90, 6, 4), -- Kg
-    ('Salmão 500g', 32.80, 6, 5), -- Grama
-    ('Linguiça Toscana', 15.99, 6, 4), -- Kg
-    ('Bife de Contra Filé', 29.50, 6, 4), -- Kg
-    ('Peito de Peru', 25.75, 6, 4), -- Kg
+    ('Filé de Frango 1kg', 18.50, 6, 4, 4), -- Kg (Carnes Bovinas)
+    ('Carne Moída 1kg', 27.90, 6, 4, 4), -- Kg (Carnes Bovinas)
+    ('Salmão 500g', 32.80, 6, 5, 5), -- Grama (Peixes e Frutos do Mar)
+    ('Linguiça Toscana', 15.99, 6, 4, 4), -- Kg (Carnes Bovinas)
+    ('Bife de Contra Filé', 29.50, 6, 4, 4), -- Kg (Carnes Bovinas)
+    ('Peito de Peru', 25.75, 6, 4, 4), -- Kg (Carnes Bovinas)
     -- Frutas e Verduras (Kg ou Unidade)
-    ('Maçã', 4.20, 7, 4), -- Kg
-    ('Tomate', 5.30, 7, 4), -- Kg
-    ('Alface', 2.50, 7, 7), -- Metro (folhas)
-    ('Banana', 3.00, 7, 4), -- Kg
-    ('Abacaxi', 7.20, 7, 1), -- Unidade
-    ('Cenoura', 4.80, 7, 4), -- Kg
+    ('Maçã', 4.20, 7, 4, 4), -- Kg (Frutas Frescas)
+    ('Tomate', 5.30, 7, 4, 4), -- Kg (Legumes)
+    ('Alface', 2.50, 7, 7, 7), -- Metro (folhas) (Verduras Folhosas)
+    ('Banana', 3.00, 7, 4, 4), -- Kg (Frutas Frescas)
+    ('Abacaxi', 7.20, 7, 1, 1), -- Unidade (Frutas Frescas)
+    ('Cenoura', 4.80, 7, 4, 4), -- Kg (Legumes)
     -- Produtos de Limpeza (Pacote, Unidade ou Litro)
-    ('Detergente', 3.60, 8, 2), -- Litro
-    ('Sabão em Pó', 15.90, 8, 4), -- Kg
-    ('Papel Higiênico 12un', 18.00, 8, 8), -- Pacote
-    ('Amaciante', 12.50, 8, 2), -- Litro
-    ('Álcool 70%', 8.99, 8, 2), -- Litro
-    ('Esponja de Limpeza', 2.75, 8, 1);
+    ('Detergente', 3.60, 8, 2, 2), -- Litro (Detergentes)
+    ('Sabão em Pó', 15.90, 8, 4, 4), -- Kg (Limpeza Geral)
+    ('Papel Higiênico 12un', 18.00, 8, 8, 8), -- Pacote (Limpeza de Roupas)
+    ('Amaciante', 12.50, 8, 2, 2), -- Litro (Limpeza Geral)
+    ('Álcool 70%', 8.99, 8, 2, 2), -- Litro (Desinfetantes)
+    ('Esponja de Limpeza', 2.75, 8, 1, 1);
 
 --- TABELA DOS STATUS DA LISTA DE COMPRAS
 CREATE TABLE

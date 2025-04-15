@@ -75,7 +75,12 @@ func (ps *productService) CreateProducts(product model.ProductPost) (model.Produ
 		// Retorna erro 400 caso o ID da categoria não exista
 		return model.ProductPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar produto: %v", err)
 	}
-
+	// Chama o serviço para verificar se a subcategoria existe
+	err = ps.repository.ValidateSubCategory(product.Categoria_Id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da subcategoria não exista
+		return model.ProductPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao criar produto: %v", err)
+	}
 	// Chama o repositório para criar um novo produto e retorna o ID gerado e o nome da categoria.
 	insertedProduct, err := ps.repository.CreateProducts(product, tx)
 	if err != nil {
@@ -107,6 +112,21 @@ func (ps *productService) UpdateProducts(product model.ProductUpdate) (model.Pro
 	if err != nil {
 		return model.ProductUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar produto: %v", err)
 	}
+	
+	// Chama o serviço para verificar se a subcategoria existe
+	err = ps.repository.ValidateSubCategory(product.Categoria_Id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da subcategoria não exista
+		return model.ProductUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar produto: %v", err)
+	}
+
+	sts, err := ps.repository.VerificarStatusProduto(product.Id, tx)
+	if err != nil {
+		return model.ProductUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar produto: %v", err)
+	}
+	if sts == "inativo" {
+		return model.ProductUpdate{}, http.StatusInternalServerError, fmt.Errorf("o produto se encontra inativo")
+	}
 
 	updatedProduct, err := ps.repository.UpdateProducts(product, tx) // Chama o repositório para atualizar o produto.
 	if err != nil {
@@ -132,7 +152,14 @@ func (ps *productService) InactivateProduct(id int) error {
 		return fmt.Errorf("erro ao inativar produto: %v", err)
 	}
 
-	// Chama o repositório para excluir o produto
+	sts, err := ps.repository.VerificarStatusProduto(id, tx)
+	if err != nil {
+		return fmt.Errorf("erro ao inativar produto: %v", err)
+	}
+	if sts == "inativo" {
+		return fmt.Errorf("o produto já se encontra inativo")
+	}
+
 	err = ps.repository.InactivateProduct(id, tx)
 	if err != nil {
 		return err // Retorna erro caso a exclusão falhe
@@ -157,7 +184,14 @@ func (ps *productService) ActivateProduct(id int) error {
 		return fmt.Errorf("erro ao ativar produto: %v", err)
 	}
 
-	// Chama o repositório para excluir o produto
+	sts, err := ps.repository.VerificarStatusProduto(id, tx)
+	if err != nil {
+		return fmt.Errorf("erro ao inativar produto: %v", err)
+	}
+	if sts == "ativo" {
+		return fmt.Errorf("o produto já se encontra ativo")
+	}
+
 	err = ps.repository.ActivateProduct(id, tx)
 	if err != nil {
 		return err // Retorna erro caso a exclusão falhe

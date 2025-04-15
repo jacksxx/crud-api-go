@@ -8,6 +8,8 @@ type Product struct {
 	Price              float64    `json:"price" db:"products_price"`
 	Categoria_Id       int        `json:"categorias_id" db:"categorias_id"`
 	Categoria_Name     string     `json:"categoria_name" db:"categorias_name"`
+	SubCategoria_Id    int        `json:"subcategorias_id" db:"subcategorias_id"`
+	SubCategoria_Name  string     `json:"subcategoria_name" db:"subcategorias_name"`
 	Unidade_Id         int        `json:"unidade_id" db:"unidade_id"`
 	Unidade_Descricao  string     `json:"unidade_descricao" db:"unidade_descricao"`
 	Unidade_Abreviacao string     `json:"unidade_abreviacao" db:"unidade_abreviacao"`
@@ -23,6 +25,8 @@ type ProductPost struct {
 	Price             float64 `json:"price" db:"products_price" validate:"required,gt=0"`
 	Categoria_Id      int     `json:"categorias_id" db:"categorias_id" validate:"required,gt=0"`
 	Categoria_Name    string  `json:"categoria_name" db:"categorias_name"`
+	SubCategoria_Id   int     `json:"subcategorias_id" db:"subcategorias_id"`
+	SubCategoria_Name string  `json:"subcategoria_name" db:"subcategorias_name"`
 	Unidade_Id        int     `json:"unidade_id" db:"unidade_id"`
 	Unidade_Descricao string  `json:"unidade_descricao" db:"unidade_descricao"`
 }
@@ -33,6 +37,8 @@ type ProductUpdate struct {
 	Price             float64 `json:"price" db:"products_price" validate:"omitempty,gt=0"`
 	Categoria_Id      int     `json:"categorias_id" db:"categorias_id" validate:"omitempty,gt=0"`
 	Categoria_Name    string  `json:"categoria_name" db:"categorias_name"`
+	SubCategoria_Id   int     `json:"subcategorias_id" db:"subcategorias_id"`
+	SubCategoria_Name string  `json:"subcategoria_name" db:"subcategorias_name"`
 	Unidade_Id        int     `json:"unidade_id" db:"unidade_id"`
 	Unidade_Descricao string  `json:"unidade_descricao" db:"unidade_descricao"`
 }
