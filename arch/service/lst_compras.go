@@ -142,12 +142,7 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 	if err != nil {
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar lista de compra: %v", err)
 	}
-	fmt.Println("COMPRAS: ", compras)
 
-	// if compras.Status_Codigo != 1 {
-	// 	tx.Rollback()
-	// 	return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("a lista de Compra não se encontra em andamento")
-	// }
 	if compras.Id == 0 {
 		tx.Rollback()
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
@@ -256,16 +251,17 @@ func (s *lstComprasService) FinishLstCompras(compra model.LstCompras_Finish) (mo
 		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
+
 	status, err := s.repository.VerificarStatusLstCompras(compra.Id, tx)
 	if status != 1 {
 		return model.LstCompras_Finish{}, http.StatusInternalServerError, err
 	}
-	fmt.Println("COMPRA: ", compra)
+
 	compras, err := s.repository.FinishLstCompras(compra, tx)
 	if err != nil {
 		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao finalizar lista de compra: %v", err)
 	}
-	fmt.Println("COMPRAS: ", compras)
+
 	if compras.Id == 0 {
 		tx.Rollback()
 		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro: ID da lista de compras inválido")
@@ -337,6 +333,7 @@ func (s *lstComprasService) CancelLstCompras(compra model.LstCompras_Cancel) (in
 	}
 	defer tx.Rollback()
 
+	
 	// Verificar se a lista de compras realmente existe antes de continuar
 	existe, err := s.repository.VerificarExistenciaLstCompras(compra.Id, tx)
 	if err != nil {
@@ -347,16 +344,9 @@ func (s *lstComprasService) CancelLstCompras(compra model.LstCompras_Cancel) (in
 	}
 
 	// Buscar status antes de tentar cancelar
-	statusAtual, err := s.repository.BuscarStatusLstCompras(compra.Id, tx)
-	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("erro ao buscar status da lista de compras: %v", err)
-	}
-
-	fmt.Printf("Status atual da lista de compras (ID: %d): %d\n", compra.Id, statusAtual)
-
-	// Verificar se a lista está em andamento
-	if statusAtual != 1 {
-		return http.StatusBadRequest, fmt.Errorf("erro: Lista de Compra Não Está Em Andamento")
+	status, err := s.repository.VerificarStatusLstCompras(compra.Id, tx)
+	if status != 1 {
+		return http.StatusInternalServerError, err
 	}
 
 	// Atualizar status para "Cancelado"

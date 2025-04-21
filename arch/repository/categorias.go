@@ -19,6 +19,7 @@ type CategoriasRepository interface {
 	ValidateCategoryName(nomeCategorias string, categoriaId *int, tx *sql.Tx) error
 	ValidateCategory(categoriaId int, tx *sql.Tx) error
 	CountCategories(filters model.CategoriasFilters) (int, error)
+	CheckStatus(categoriaId int, tx *sql.Tx) (string, error)
 }
 
 type categoriasRepository struct {
@@ -197,7 +198,6 @@ func (cr *categoriasRepository) ValidateCategoryName(nomeCategorias string, cate
 		return fmt.Errorf("categoria já existe")
 	}
 
-
 	// Se houver erro, mas não for devido a uma categoria existente, retorna nil (nenhum erro encontrado)
 	return nil
 }
@@ -237,4 +237,22 @@ func (cr *categoriasRepository) CountCategories(filters model.CategoriasFilters)
 // ValidateCategory verifica se a categoria existe no banco de dados.
 func (cr *categoriasRepository) ValidateCategory(categoriaId int, tx *sql.Tx) error {
 	return helper.ValidateCategory(tx, categoriaId)
+}
+
+func (r *categoriasRepository) CheckStatus(categoriaId int, tx *sql.Tx) (string, error) {
+	var status string
+
+	query := `
+		SELECT categorias_status 
+		FROM prod.categorias 
+		WHERE categorias_id = $1
+	`
+
+	err := tx.QueryRow(query, categoriaId).Scan(&status)
+	if err != nil {
+
+		return "", fmt.Errorf("erro ao verificar status da categoria: %v", err)
+	}
+
+	return status, nil
 }

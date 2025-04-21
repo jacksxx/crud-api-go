@@ -87,17 +87,27 @@ func (cs *categoriaService) UpdateCategorias(categorias model.CategoriasUpdate) 
 		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
-
-	err = cs.repository.ValidateCategoryName(categorias.Name, &categorias.Id, tx)
-	if err != nil {
-		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
-	}
-
+	
 	// Chama o serviço para verificar se a categoria existe
 	err = cs.repository.ValidateCategory(categorias.Id, tx)
 	if err != nil {
 		// Retorna erro 400 caso o ID da categoria não exista
 		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
+	}
+
+	err = cs.repository.ValidateCategoryName(categorias.Name, &categorias.Id, tx)
+	if err != nil {
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao atualizar categoria: %v", err)
+	}
+	
+	status, err := cs.repository.CheckStatus(categorias.Id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao Inativar categoria: %v", err)
+	}
+	if status == "inativo" {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return model.CategoriasUpdate{}, http.StatusInternalServerError, fmt.Errorf("erro ao Inativar categoria: Categoria já inativada")
 	}
 
 	updatedCategories, err := cs.repository.UpdateCategoria(categorias, tx)
@@ -117,6 +127,16 @@ func (cs *categoriaService) InactivateCategorias(id int) error {
 		return fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
+
+	status, err := cs.repository.CheckStatus(id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return fmt.Errorf("erro ao Inativar categoria: %v", err)
+	}
+	if status == "inativo" {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return fmt.Errorf("erro ao Inativar categoria: Categoria já inativada")
+	}
 	// Chama o serviço para verificar se a categoria existe
 	err = cs.repository.ValidateCategory(id, tx)
 	if err != nil {
@@ -139,6 +159,16 @@ func (cs *categoriaService) ActivateCategorias(id int) error {
 	tx, err := cs.repository.BeginTransaction()
 	if err != nil {
 		return fmt.Errorf("erro ao iniciar transação: %v", err)
+	}
+
+	status, err := cs.repository.CheckStatus(id, tx)
+	if err != nil {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return fmt.Errorf("erro ao Ativar categoria: %v", err)
+	}
+	if status == "ativo" {
+		// Retorna erro 400 caso o ID da categoria não exista
+		return fmt.Errorf("erro ao Ativar categoria: Categoria já ativada")
 	}
 
 	err = cs.repository.ValidateCategory(id, tx)

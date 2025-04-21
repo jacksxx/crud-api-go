@@ -13,6 +13,18 @@ type Subcategorias struct {
 	Status           string     `json:"status" db:"subcategorias_status"`
 }
 
+type SubcategoriasPost struct {
+	Id               int        `json:"id" db:"subcategorias_id"`
+	Name             string     `json:"nome" db:"subcategorias_name"`
+	CategoriasId     int        `json:"categorias_id" db:"categorias_id"`	
+}
+
+type SubcategoriasUpdate struct {
+	Id               int        `json:"id" db:"subcategorias_id"`
+	Name             string     `json:"nome" db:"subcategorias_name"`
+	CategoriasId     int        `json:"categorias_id" db:"categorias_id"`	
+}
+
 type SubcategoriasFilters struct {
 	Name   string `query:"nome" db:"subcategorias_name:ILIKE:a"`
 	Status string `query:"status"`

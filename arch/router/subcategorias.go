@@ -11,10 +11,10 @@ func SubcategoriesRouter(ctx *echo.Echo, baseRouter string, subcategoriesControl
 	catRouter := ctx.Group(baseRouter)
 
 	catRouter.GET("", subcategoriesController.GetSubcategorias)
-	// catRouter.GET("/:id", categoriesController.GetCategoriaByID)
-	// catRouter.POST("", categoriesController.CreateCategoria)
-	// catRouter.PATCH("/:id", categoriesController.UpdateCategorias)
-	// catRouter.PATCH("/inativar/:id", categoriesController.InactivateCategorias)
-	// catRouter.PATCH("/ativar/:id", categoriesController.ActivateCategorias)
+	catRouter.GET("/:id", subcategoriesController.GetSubcategoriaByID)
+	catRouter.POST("", subcategoriesController.CreateSubcategoria)
+	catRouter.PATCH("/:id", subcategoriesController.UpdateSubcategorias)
+	catRouter.PATCH("/inativar/:id", subcategoriesController.InactivateSubcategorias)
+	catRouter.PATCH("/ativar/:id", subcategoriesController.ActivateSubcategorias)
 
 }
