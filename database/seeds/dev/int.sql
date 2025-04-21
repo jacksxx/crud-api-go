@@ -17,6 +17,8 @@ SET
 --     RETURN NEW;
 -- END;
 -- $$ LANGUAGE plpgsql;
+
+
 CREATE TABLE
     IF NOT EXISTS prod.categorias (
         categorias_id SERIAL PRIMARY KEY,
@@ -124,7 +126,7 @@ VALUES
 CREATE TABLE
     IF NOT EXISTS prod.products (
         products_id SERIAL PRIMARY KEY,
-        products_name VARCHAR(50) NOT NULL,
+        products_name VARCHAR(200) NOT NULL,
         products_price DECIMAL(10, 2) NOT NULL,
         products_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         products_data_atualizacao TIMESTAMP NULL,
@@ -227,7 +229,9 @@ CREATE TABLE
         lst_compras_total_itens INT NOT NULL DEFAULT 0,
         lst_compras_status_id INT NOT NULL REFERENCES prod.lst_compras_status (lst_compras_status_id) DEFAULT 1,
         lst_compras_data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        lst_compras_data_atualizacao TIMESTAMP NULL
+        lst_compras_data_atualizacao TIMESTAMP NULL,
+        lst_compras_data_cancelamento TIMESTAMP NULL,
+        lst_compras_data_finalizacao TIMESTAMP NULL
     );
 
 -- TABELA DOS ITENS DA LISTA DE COMPRAS
@@ -249,12 +253,28 @@ INSERT INTO
         lst_compras_name,
         lst_compras_valor_total,
         lst_compras_total_itens,
-        lst_compras_status_id
+        lst_compras_status_id,
+        lst_compras_data_cancelamento,
+        lst_compras_data_finalizacao
     )
 VALUES
-    ('Compras do Mês', 118.00, 3, 1),
-    ('Almoção da Massa', 256.99, 9, 2),
-    ('Compras do Mês 2', 98.00, 6, 3);
+    ('Compras do Mês', 118.00, 3, 1, NULL, NULL),
+    (
+        'Almoção da Massa',
+        256.99,
+        9,
+        2,
+        NULL,
+        CURRENT_TIMESTAMP
+    ),
+    (
+        'Compras do Mês 2',
+        98.00,
+        6,
+        3,
+        CURRENT_TIMESTAMP,
+        NULL
+    );
 
 -- INSERINDO ITENS NA LISTA
 INSERT INTO
@@ -279,10 +299,32 @@ VALUES
     (3, 25, 2, 3.00, FALSE),
     (3, 7, 6, 2.00, FALSE);
 
--- Trigger para a tabela prod.categorias
-CREATE TRIGGER atualizar_categoria BEFORE
-UPDATE ON prod.categorias FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao ();
+DO $$
+BEGIN
+    -- Reseta as sequências para o valor máximo das respectivas tabelas
+    PERFORM setval('prod.categorias_categorias_id_seq', COALESCE((SELECT MAX(categorias_id) FROM prod.categorias), 1), true);
+    PERFORM setval('prod.subcategorias_subcategorias_id_seq', COALESCE((SELECT MAX(subcategorias_id) FROM prod.subcategorias), 1), true);
+    PERFORM setval('prod.unidades_unidade_id_seq', COALESCE((SELECT MAX(unidade_id) FROM prod.unidades), 1), true);
+    PERFORM setval('prod.products_products_id_seq', COALESCE((SELECT MAX(products_id) FROM prod.products), 1), true);
+    PERFORM setval('prod.lst_compras_status_lst_compras_status_id_seq', COALESCE((SELECT MAX(lst_compras_status_id) FROM prod.lst_compras_status), 1), true);
+    PERFORM setval('prod.lst_compras_lst_compras_id_seq', COALESCE((SELECT MAX(lst_compras_id) FROM prod.lst_compras), 1), true);
+    PERFORM setval('prod.lst_compras_itens_lst_compras_itens_id_seq', COALESCE((SELECT MAX(lst_compras_itens_id) FROM prod.lst_compras_itens), 1), true);
+END;
+$$;
 
--- Trigger para a tabela prod.products
-CREATE TRIGGER atualizar_product BEFORE
-UPDATE ON prod.products FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao ();
+-- -- Trigger para a tabela prod.categorias
+-- CREATE TRIGGER atualizar_categoria BEFORE
+-- UPDATE ON prod.categorias FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao ();
+
+-- -- Trigger para a tabela prod.products
+-- CREATE TRIGGER atualizar_product BEFORE
+-- UPDATE ON prod.products FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao ();
+
+-- Reset de sequences para o schema prod
+-- SELECT setval('prod.categorias_categorias_id_seq', COALESCE((SELECT MAX(categorias_id) FROM prod.categorias), 1), true);
+-- SELECT setval('prod.subcategorias_subcategorias_id_seq', COALESCE((SELECT MAX(subcategorias_id) FROM prod.subcategorias), 1), true);
+-- SELECT setval('prod.unidades_unidade_id_seq', COALESCE((SELECT MAX(unidade_id) FROM prod.unidades), 1), true);
+-- SELECT setval('prod.products_products_id_seq', COALESCE((SELECT MAX(products_id) FROM prod.products), 1), true);
+-- SELECT setval('prod.lst_compras_status_lst_compras_status_id_seq', COALESCE((SELECT MAX(lst_compras_status_id) FROM prod.lst_compras_status), 1), true);
+-- SELECT setval('prod.lst_compras_lst_compras_id_seq', COALESCE((SELECT MAX(lst_compras_id) FROM prod.lst_compras), 1), true);
+-- SELECT setval('prod.lst_compras_itens_lst_compras_itens_id_seq', COALESCE((SELECT MAX(lst_compras_itens_id) FROM prod.lst_compras_itens), 1), true);

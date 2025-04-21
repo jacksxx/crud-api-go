@@ -3,14 +3,16 @@ package model
 import "time"
 
 type LstCompras struct {
-	Id               int        `json:"id" db:"lst_compras_id"`
-	Nome             string     `json:"nome" db:"lst_compras_name"`
-	Total            float64    `json:"total" db:"lst_compras_valor_total"`
-	Qtd_Itens        int        `json:"qtd_itens" db:"lst_compras_total_itens"`
-	Status_Codigo    int        `json:"status_codigo" db:"lst_compras_status_id"`
-	Status           string     `json:"status" db:"lst_compras_status_name"`
-	Data_Cadastro    time.Time  `json:"data_cadastro" db:"lst_compras_data_cadastro"`
-	Data_Atualizacao *time.Time `json:"data_atualizacao" db:"lst_compras_data_atualizacao"`
+	Id                int        `json:"id" db:"lst_compras_id"`
+	Nome              string     `json:"nome" db:"lst_compras_name"`
+	Total             float64    `json:"total" db:"lst_compras_valor_total"`
+	Qtd_Itens         int        `json:"qtd_itens" db:"lst_compras_total_itens"`
+	Status_Codigo     int        `json:"status_codigo" db:"lst_compras_status_id"`
+	Status            string     `json:"status" db:"lst_compras_status_name"`
+	Data_Cadastro     time.Time  `json:"data_cadastro" db:"lst_compras_data_cadastro"`
+	Data_Atualizacao  *time.Time `json:"data_atualizacao" db:"lst_compras_data_atualizacao"`
+	Data_Cancelamento *time.Time `json:"data_cancelamento" db:"lst_compras_data_cancelamento"`
+	Data_Finalizacao  *time.Time `json:"data_finalizacao" db:"lst_compras_data_finalizacao"`
 }
 
 type LstCompras_Post struct {

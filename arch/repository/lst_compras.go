@@ -40,7 +40,8 @@ func (r *lstComprasRepository) GetLstCompras(filters model.LstCompras_Filters) (
 		SELECT lc.lst_compras_id, lc.lst_compras_name, 
 		       lc.lst_compras_valor_total, lc.lst_compras_total_itens,
 		       lc.lst_compras_status_id, sc.lst_compras_status_name, 
-		       lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao
+		       lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao,
+			   lc.lst_compras_data_cancelamento, lc.lst_compras_data_finalizacao
 		FROM prod.lst_compras lc
 		JOIN prod.lst_compras_status sc ON lc.lst_compras_status_id = sc.lst_compras_status_id`
 
@@ -83,7 +84,7 @@ func (r *lstComprasRepository) GetLstCompras(filters model.LstCompras_Filters) (
 	var compras []model.LstCompras
 	for rows.Next() {
 		var compra model.LstCompras
-		if err := rows.Scan(&compra.Id, &compra.Nome, &compra.Total, &compra.Qtd_Itens, &compra.Status_Codigo, &compra.Status, &compra.Data_Cadastro, &compra.Data_Atualizacao); err != nil {
+		if err := rows.Scan(&compra.Id, &compra.Nome, &compra.Total, &compra.Qtd_Itens, &compra.Status_Codigo, &compra.Status, &compra.Data_Cadastro, &compra.Data_Atualizacao, &compra.Data_Cancelamento, &compra.Data_Finalizacao); err != nil {
 			return nil, err
 		}
 		compras = append(compras, compra)
@@ -98,7 +99,8 @@ func (r *lstComprasRepository) GetLstComprasById(id int) (model.LstCompras, erro
 		SELECT lc.lst_compras_id, lc.lst_compras_name, 
 		       lc.lst_compras_valor_total, lc.lst_compras_total_itens,
 		       lc.lst_compras_status_id, sc.lst_compras_status_name, 
-		       lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao
+		       lc.lst_compras_data_cadastro, lc.lst_compras_data_atualizacao,
+			   lc.lst_compras_data_cancelamento, lc.lst_compras_data_finalizacao
 		FROM prod.lst_compras lc
 		JOIN prod.lst_compras_status sc ON lc.lst_compras_status_id = sc.lst_compras_status_id
 		WHERE lc.lst_compras_id = $1`)
@@ -109,7 +111,7 @@ func (r *lstComprasRepository) GetLstComprasById(id int) (model.LstCompras, erro
 	defer query.Close()
 	var compra model.LstCompras
 
-	err = query.QueryRow(id).Scan(&compra.Id, &compra.Nome, &compra.Total, &compra.Qtd_Itens, &compra.Status_Codigo, &compra.Status, &compra.Data_Cadastro, &compra.Data_Atualizacao)
+	err = query.QueryRow(id).Scan(&compra.Id, &compra.Nome, &compra.Total, &compra.Qtd_Itens, &compra.Status_Codigo, &compra.Status, &compra.Data_Cadastro, &compra.Data_Atualizacao, &compra.Data_Cancelamento, &compra.Data_Finalizacao)
 	if err != nil {
 		// Log de erro caso a consulta falhe
 		if err == sql.ErrNoRows {
