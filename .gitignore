@@ -1,0 +1,26 @@
+# Ignora arquivos de ambiente
+.env
+
+# Ignora diretório de documentação gerado
+/docs
+
+# Ignora binários compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Ignora pastas de build
+/build
+/bin
+/dist
+/tmp
+# Ignora arquivos temporários do sistema e editor
+*.log
+*.tmp
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/

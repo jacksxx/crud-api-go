@@ -1,7 +1,6 @@
 package config
 
 import (
-	//"net/http"
 	"fmt"
 	"os"
 

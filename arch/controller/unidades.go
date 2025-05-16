@@ -33,6 +33,20 @@ func NewUnitController(service service.UnidadesService, validate *validator.Vali
 	}
 }
 
+// GetUnits retorna uma lista paginada de unidades com filtro por descrição
+//
+// @Summary      Lista unidades
+// @Description  Retorna uma lista paginada de unidades com filtro por descrição
+// @Tags         Unidades
+// @Accept       json
+// @Produce      json
+// @Param        descricao  query     string  false  "Filtrar por descrição (ILIKE)"
+// @Param        limit      query     int     true   "Quantidade de registros por página"
+// @Param        page       query     int     true   "Número da página"
+// @Success      200        {array}   model.Unidades
+// @Failure      400        {object}  model.WebResponse
+// @Failure      500        {object}  model.WebResponse
+// @Router       /unidades [get]
 func (c *unitController) GetUnits(ctx echo.Context) error {
 	filters := model.UnidadesFilters{}
 
@@ -49,6 +63,18 @@ func (c *unitController) GetUnits(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, categorias)
 }
 
+// GetUnitByID retorna uma unidade específica pelo ID
+//
+// @Summary      Buscar unidade por ID
+// @Description  Retorna uma unidade específica pelo ID
+// @Tags         Unidades
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int     true   "ID da Unidade"
+// @Success      200  {object}  model.Unidades
+// @Failure      400  {object}  model.WebResponse
+// @Failure      404  {object}  model.WebResponse
+// @Router       /unidades/{id} [get]
 func (c *unitController) GetUnitByID(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -68,6 +94,17 @@ func (c *unitController) GetUnitByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, unit, nil)
 }
 
+// CreateUnit cria uma nova unidade
+//
+// @Summary      Criar unidade
+// @Description  Cria uma nova unidade
+// @Tags         Unidades
+// @Accept       json
+// @Produce      json
+// @Param        unidade  body      model.UnidadesPost  true  "Nova unidade"
+// @Success      201      {object}  model.UnidadesPost
+// @Failure      400      {object}  model.WebResponse
+// @Router       /unidades [post]
 func (c *unitController) CreateUnit(ctx echo.Context) error {
 
 	unit := model.UnidadesPost{}
@@ -84,6 +121,20 @@ func (c *unitController) CreateUnit(ctx echo.Context) error {
 
 	return helper.BuildResponse(ctx, httpStatus, insertedUnit, nil)
 }
+
+// UpdateUnit atualiza os dados de uma unidade existente
+//
+// @Summary      Atualizar unidade
+// @Description  Atualiza os dados de uma unidade existente
+// @Tags         Unidades
+// @Accept       json
+// @Produce      json
+// @Param        id       path      int                  true  "ID da unidade"
+// @Param        unidade  body      model.UnidadesUpdate true  "Dados da unidade a serem atualizados"
+// @Success      200      {object}  model.UnidadesUpdate
+// @Failure      400      {object}  model.WebResponse
+// @Failure      500      {object}  model.WebResponse
+// @Router       /unidades/{id} [patch]
 
 func (c *unitController) UpdateUnit(ctx echo.Context) error {
 	id := ctx.Param("id")
