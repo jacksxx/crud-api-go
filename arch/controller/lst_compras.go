@@ -38,7 +38,7 @@ func NewLstComprasController(service service.LstComprasService, validate *valida
 // GetLstCompras godoc
 // @Summary      Lista todas as compras
 // @Description  Retorna uma lista de compras com base nos filtros fornecidos
-// @Tags         Compras
+// @Tags         Listas de Compras
 // @Accept       json
 // @Produce      json
 // @Param        nome           query     string  false  "Nome da compra"
@@ -69,7 +69,7 @@ func (c *lstComprasController) GetLstCompras(ctx echo.Context) error {
 // GetLstComprasById godoc
 // @Summary      Buscar uma compra por ID
 // @Description  Retorna uma compra específica com base no ID informado
-// @Tags         lstcompras
+// @Tags         Listas de Compras
 // @Accept       json
 // @Produce      json
 // @Param        id  path      int  true  "ID da Compra"
