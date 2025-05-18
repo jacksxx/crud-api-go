@@ -35,6 +35,20 @@ func NewCategoriaController(service service.CategoriaService, validate *validato
 	}
 }
 
+// GetCategorias godoc
+// @Summary Lista categorias com filtros
+// @Description Retorna uma lista de categorias com filtros opcionais por nome e status
+// @Tags Categorias
+// @Accept  json
+// @Produce  json
+// @Param nome query string false "Filtrar por nome (ILIKE)"
+// @Param status query string false "Filtrar por status"
+// @Param limit query int false "Limite de itens por página (mínimo: 1)"
+// @Param page query int false "Número da página (mínimo: 1)"
+// @Success 200 {object} model.WebResponse{data=[]model.Categorias}
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /categorias [get]
 func (cc *categoriaController) GetCategorias(ctx echo.Context) error {
 	filters := model.CategoriasFilters{}
 
@@ -51,6 +65,18 @@ func (cc *categoriaController) GetCategorias(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, categorias)
 }
 
+// GetCategoriaByID godoc
+// @Summary Busca uma categoria por ID
+// @Description Retorna os dados de uma categoria específica
+// @Tags Categorias
+// @Accept  json
+// @Produce  json
+// @Param id path int true "ID da categoria"
+// @Success 200 {object} model.WebResponse{data=model.Categorias}
+// @Failure 400 {object} model.WebResponse
+// @Failure 404 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /categorias/{id} [get]
 func (cc *categoriaController) GetCategoriaByID(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -70,6 +96,16 @@ func (cc *categoriaController) GetCategoriaByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, categoria, nil)
 }
 
+// CreateCategoria godoc
+// @Summary Cria uma nova categoria
+// @Description Cria uma nova categoria no sistema
+// @Tags Categorias
+// @Accept  json
+// @Produce  json
+// @Param categoria body model.CategoriasPost true "Dados da nova categoria"
+// @Success 201 {object} model.WebResponse{data=model.Categorias}
+// @Failure 400 {object} model.WebResponse
+// @Router /categorias [post]
 func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 
 	categoria := model.CategoriasPost{}
@@ -87,6 +123,19 @@ func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, insertedCategories, nil)
 }
 
+// UpdateCategorias godoc
+// @Summary Atualiza uma categoria existente
+// @Description Atualiza os dados de uma categoria com base no ID
+// @Tags Categorias
+// @Accept  json
+// @Produce  json
+// @Param id path int true "ID da categoria"
+// @Param categoria body model.CategoriasUpdate true "Dados atualizados da categoria"
+// @Success 200 {object} model.WebResponse{data=model.Categorias}
+// @Failure 400 {object} model.WebResponse
+// @Failure 404 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /categorias/{id} [patch]
 func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -116,6 +165,17 @@ func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedCategoty, nil)
 }
 
+// InactivateCategorias godoc
+// @Summary Inativa uma categoria
+// @Description Define data_inativacao e status como inativo para a categoria
+// @Tags Categorias
+// @Accept  json
+// @Produce  json
+// @Param id path int true "ID da categoria"
+// @Success 204 {object} nil
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /categorias/{id}/inativar [patch]
 func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -137,6 +197,17 @@ func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }
 
+// ActivateCategorias godoc
+// @Summary Ativa uma categoria
+// @Description Remove a data_inativacao e define status como ativo
+// @Tags Categorias
+// @Accept  json
+// @Produce  json
+// @Param id path int true "ID da categoria"
+// @Success 204 {object} nil
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /categorias/{id}/ativar [patch]
 func (cc *categoriaController) ActivateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {

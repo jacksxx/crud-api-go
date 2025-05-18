@@ -38,8 +38,20 @@ func NewProductController(service service.ProductService, validate *validator.Va
 	}
 }
 
-// GetProducts lida com requisições GET para buscar todos os produtos.
-
+// @Summary Lista produtos
+// @Description Retorna uma lista de produtos com filtros opcionais
+// @Tags Produtos
+// @Accept json
+// @Produce json
+// @Param name query string false "Nome do produto"
+// @Param categorias_id query int false "ID da categoria"
+// @Param unidade_id query int false "ID da unidade"
+// @Param status query string false "Status do produto"
+// @Param limit query int false "Limite de itens por página (mínimo: 1)"
+// @Param page query int false "Número da página (mínimo: 1)"
+// @Success 200 {object} model.WebResponse{data=[]model.Product}
+// @Failure 500 {object} model.WebResponse
+// @Router /produtos [get]
 func (p *productController) GetProducts(ctx echo.Context) error {
 	// Inicializa os filtros
 	filters := model.ProductFilters{}
@@ -61,8 +73,17 @@ func (p *productController) GetProducts(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, products)
 }
 
-// GetProductByID lida com requisições GET para buscar um produto pelo ID.
-
+// GetProductByID godoc
+// @Summary Obtém um produto pelo ID
+// @Description Retorna os detalhes de um produto específico
+// @Tags Produtos
+// @Accept json
+// @Produce json
+// @Param id path int true "ID do produto"
+// @Success 200 {object} model.WebResponse{data=model.Product}
+// @Failure 404 {object} model.WebResponse{errors=[]string}
+// @Failure 500 {object} model.WebResponse{errors=[]string}
+// @Router /produtos/{id} [get]
 func (pc *productController) GetProductByID(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
@@ -86,7 +107,17 @@ func (pc *productController) GetProductByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, product, nil)
 }
 
-// CreateProducts lida com requisições POST para criar um novo produto.
+// CreateProduct godoc
+// @Summary Cria um novo produto
+// @Description Insere um novo produto no banco de dados
+// @Tags Produtos
+// @Accept json
+// @Produce json
+// @Param produto body model.ProductPost true "Dados do produto"
+// @Success 201 {object} model.WebResponse{data=model.ProductPost}
+// @Failure 400 {object} model.WebResponse{errors=[]string}
+// @Failure 500 {object} model.WebResponse{errors=[]string}
+// @Router /produtos [post]
 func (pc *productController) CreateProducts(ctx echo.Context) error {
 	// Cria uma variável do tipo Product para armazenar os dados recebidos no corpo da requisição.
 	product := model.ProductPost{}
@@ -107,7 +138,18 @@ func (pc *productController) CreateProducts(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, insertedProduct, nil)
 }
 
-// UpdateProducts lida com requisições PUT para atualizar um produto existente.
+// UpdateProduct godoc
+// @Summary Atualiza um produto existente
+// @Description Atualiza os dados de um produto no banco de dados
+// @Tags Produtos
+// @Accept json
+// @Produce json
+// @Param produto body model.ProductUpdate true "Dados atualizados do produto"
+// @Success 200 {object} model.WebResponse{data=model.ProductUpdate}
+// @Failure 400 {object} model.WebResponse{errors=[]string}
+// @Failure 404 {object} model.WebResponse{errors=[]string}
+// @Failure 500 {object} model.WebResponse{errors=[]string}
+// @Router /produtos [patch]
 func (pc *productController) UpdateProducts(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
@@ -146,6 +188,17 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedProduct, nil)
 }
 
+// InactivateProducts godoc
+// @Summary Inativa um produto
+// @Description Define data_inativacao e status como inativo para o produto
+// @Tags Produtos
+// @Accept  json
+// @Produce  json
+// @Param id path int true "ID do produto"
+// @Success 204 {object} nil
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /produtos/{id}/inativar [patch]
 func (pc *productController) InactivateProduct(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL
 	id := ctx.Param("id")
@@ -169,6 +222,17 @@ func (pc *productController) InactivateProduct(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }
 
+// ActivateProducts godoc
+// @Summary Ativa um produto
+// @Description Remove a data_inativacao e define status como ativo
+// @Tags Produtos
+// @Accept  json
+// @Produce  json
+// @Param id path int true "ID do produto"
+// @Success 204 {object} nil
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /produtos/{id}/ativar [patch]
 func (pc *productController) ActivateProduct(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL
 	id := ctx.Param("id")

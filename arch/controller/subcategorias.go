@@ -37,6 +37,21 @@ func NewSubcategoriaController(service service.SubcategoriasService, validate *v
 	}
 }
 
+// GetSubcategorias godoc
+// @Summary      Lista Subcategorias
+// @Description  Retorna uma lista de subcategorias com suporte a filtros por nome e status.
+// @Tags         Subcategorias
+// @Accept       json
+// @Produce      json
+// @Param        nome    query     string false "Filtrar pelo nome (ILIKE)"
+// @Param        status  query     string false "Filtrar pelo status"
+// @Param        categorias_id query int  false "Filtrar por ID da categoria"
+// @Param        limit   query     int    true  "Limite de itens por página (mínimo: 1)"
+// @Param        page    query     int    true  "Número da página (mínimo: 1)"
+// @Success      200     {object}  model.WebResponse{data=[]model.Subcategorias}
+// @Failure      400     {object}  model.WebResponse
+// @Failure      500     {object}  model.WebResponse
+// @Router       /subcategorias [get]
 func (c *subcategoriaController) GetSubcategorias(ctx echo.Context) error {
 	filters := model.SubcategoriasFilters{}
 
@@ -53,6 +68,16 @@ func (c *subcategoriaController) GetSubcategorias(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, subcategorias)
 }
 
+// GetSubcategoriaByID godoc
+// @Summary Busca uma subcategoria pelo ID
+// @Tags Subcategorias
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da Subcategoria"
+// @Success 200 {object} model.WebResponse{data=model.Subcategorias}
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /subcategorias/{id} [get]
 func (c *subcategoriaController) GetSubcategoriaByID(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -72,6 +97,15 @@ func (c *subcategoriaController) GetSubcategoriaByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, subcategoria, nil)
 }
 
+// CreateSubcategoria godoc
+// @Summary Cria uma nova subcategoria
+// @Tags Subcategorias
+// @Accept json
+// @Produce json
+// @Param subcategoria body model.SubcategoriasPost true "Dados da Subcategoria"
+// @Success 201 {object} model.WebResponse{data=model.Subcategorias}
+// @Failure 400 {object} model.WebResponse
+// @Router /subcategorias [post]
 func (c *subcategoriaController) CreateSubcategoria(ctx echo.Context) error {
 
 	subcategoria := model.SubcategoriasPost{}
@@ -89,6 +123,17 @@ func (c *subcategoriaController) CreateSubcategoria(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, insertedSubcategories, nil)
 }
 
+// UpdateSubcategorias godoc
+// @Summary Atualiza uma subcategoria existente
+// @Tags Subcategorias
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da Subcategoria"
+// @Param subcategoria body model.SubcategoriasUpdate true "Dados da Subcategoria para atualização"
+// @Success 200 {object} model.WebResponse{data=model.Subcategorias}
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /subcategorias/{id} [patch]
 func (c *subcategoriaController) UpdateSubcategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -118,6 +163,16 @@ func (c *subcategoriaController) UpdateSubcategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedSubcategoty, nil)
 }
 
+// InactivateSubcategorias godoc
+// @Summary Inativa uma subcategoria
+// @Tags Subcategorias
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da Subcategoria"
+// @Success 204 {object} model.WebResponse
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /subcategorias/{id}/inativar [patch]
 func (c *subcategoriaController) InactivateSubcategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -139,6 +194,16 @@ func (c *subcategoriaController) InactivateSubcategorias(ctx echo.Context) error
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }
 
+// ActivateSubcategorias godoc
+// @Summary Ativa uma subcategoria
+// @Tags Subcategorias
+// @Accept json
+// @Produce json
+// @Param id path int true "ID da Subcategoria"
+// @Success 204 {object} model.WebResponse
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /subcategorias/{id}/ativar [patch]
 func (c *subcategoriaController) ActivateSubcategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {

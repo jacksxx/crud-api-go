@@ -14,20 +14,21 @@ type Subcategorias struct {
 }
 
 type SubcategoriasPost struct {
-	Id               int        `json:"id" db:"subcategorias_id"`
-	Name             string     `json:"nome" db:"subcategorias_name"`
-	CategoriasId     int        `json:"categorias_id" db:"categorias_id"`	
+	Id           int    `json:"id" db:"subcategorias_id"`
+	Name         string `json:"nome" db:"subcategorias_name"`
+	CategoriasId int    `json:"categorias_id" db:"categorias_id"`
 }
 
 type SubcategoriasUpdate struct {
-	Id               int        `json:"id" db:"subcategorias_id"`
-	Name             string     `json:"nome" db:"subcategorias_name"`
-	CategoriasId     int        `json:"categorias_id" db:"categorias_id"`	
+	Id           int    `json:"id" db:"subcategorias_id"`
+	Name         string `json:"nome" db:"subcategorias_name"`
+	CategoriasId int    `json:"categorias_id" db:"categorias_id"`
 }
 
 type SubcategoriasFilters struct {
-	Name   string `query:"nome" db:"subcategorias_name:ILIKE:a"`
-	Status string `query:"status"`
-	Limit  int    `query:"limit" validate:"min=1"`
-	Page   int    `query:"page" validate:"min=1"`
+	Name          string `query:"nome" db:"subcategorias_name:ILIKE:a"`
+	Status        string `query:"status"`
+	Categorias_Id int    `query:"categorias_id"`
+	Limit         int    `query:"limit" validate:"min=1"`
+	Page          int    `query:"page" validate:"min=1"`
 }

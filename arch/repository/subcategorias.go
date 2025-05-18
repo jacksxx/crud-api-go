@@ -60,6 +60,12 @@ func (r *subcategoriasRepository) GetSubcategorias(filters model.SubcategoriasFi
 		argIndex++
 	}
 
+	if filters.Categorias_Id > 0 {
+		conditions = append(conditions, fmt.Sprintf("s.categorias_id = $%d", argIndex))
+		args = append(args, filters.Categorias_Id)
+		argIndex++
+	}
+
 	// Add any additional conditions to the WHERE clause
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")

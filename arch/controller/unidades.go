@@ -41,8 +41,8 @@ func NewUnitController(service service.UnidadesService, validate *validator.Vali
 // @Accept       json
 // @Produce      json
 // @Param        descricao  query     string  false  "Filtrar por descrição (ILIKE)"
-// @Param        limit      query     int     true   "Quantidade de registros por página"
-// @Param        page       query     int     true   "Número da página"
+// @Param        limit      query     int     true   "Limite de itens por página (mínimo: 1)"
+// @Param        page       query     int     true   "Número da página (mínimo: 1)"
 // @Success      200        {array}   model.Unidades
 // @Failure      400        {object}  model.WebResponse
 // @Failure      500        {object}  model.WebResponse
@@ -135,7 +135,6 @@ func (c *unitController) CreateUnit(ctx echo.Context) error {
 // @Failure      400      {object}  model.WebResponse
 // @Failure      500      {object}  model.WebResponse
 // @Router       /unidades/{id} [patch]
-
 func (c *unitController) UpdateUnit(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
