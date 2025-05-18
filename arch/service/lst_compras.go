@@ -242,7 +242,7 @@ func (s *lstComprasService) UpdateLstCompras(compra model.LstCompras_Update) (mo
 		return model.LstCompras_Update{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 
-	return compras, http.StatusCreated, nil
+	return compras, http.StatusOK, nil
 }
 
 func (s *lstComprasService) FinishLstCompras(compra model.LstCompras_Finish) (model.LstCompras_Finish, int, error) {
@@ -322,7 +322,7 @@ func (s *lstComprasService) FinishLstCompras(compra model.LstCompras_Finish) (mo
 		return model.LstCompras_Finish{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
 
-	return compras, http.StatusCreated, nil
+	return compras, http.StatusOK, nil
 }
 
 func (s *lstComprasService) CancelLstCompras(compra model.LstCompras_Cancel) (int, error) {
@@ -333,7 +333,6 @@ func (s *lstComprasService) CancelLstCompras(compra model.LstCompras_Cancel) (in
 	}
 	defer tx.Rollback()
 
-	
 	// Verificar se a lista de compras realmente existe antes de continuar
 	existe, err := s.repository.VerificarExistenciaLstCompras(compra.Id, tx)
 	if err != nil {

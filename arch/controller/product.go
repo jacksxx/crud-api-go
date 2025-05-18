@@ -51,7 +51,7 @@ func NewProductController(service service.ProductService, validate *validator.Va
 // @Param page query int false "Número da página (mínimo: 1)"
 // @Success 200 {object} model.WebResponse{data=[]model.Product}
 // @Failure 500 {object} model.WebResponse
-// @Router /produtos [get]
+// @Router /products [get]
 func (p *productController) GetProducts(ctx echo.Context) error {
 	// Inicializa os filtros
 	filters := model.ProductFilters{}
@@ -83,7 +83,7 @@ func (p *productController) GetProducts(ctx echo.Context) error {
 // @Success 200 {object} model.WebResponse{data=model.Product}
 // @Failure 404 {object} model.WebResponse{errors=[]string}
 // @Failure 500 {object} model.WebResponse{errors=[]string}
-// @Router /produtos/{id} [get]
+// @Router /products/{id} [get]
 func (pc *productController) GetProductByID(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
@@ -117,7 +117,7 @@ func (pc *productController) GetProductByID(ctx echo.Context) error {
 // @Success 201 {object} model.WebResponse{data=model.ProductPost}
 // @Failure 400 {object} model.WebResponse{errors=[]string}
 // @Failure 500 {object} model.WebResponse{errors=[]string}
-// @Router /produtos [post]
+// @Router /products [post]
 func (pc *productController) CreateProducts(ctx echo.Context) error {
 	// Cria uma variável do tipo Product para armazenar os dados recebidos no corpo da requisição.
 	product := model.ProductPost{}
@@ -149,7 +149,7 @@ func (pc *productController) CreateProducts(ctx echo.Context) error {
 // @Failure 400 {object} model.WebResponse{errors=[]string}
 // @Failure 404 {object} model.WebResponse{errors=[]string}
 // @Failure 500 {object} model.WebResponse{errors=[]string}
-// @Router /produtos [patch]
+// @Router /products/{id} [patch]
 func (pc *productController) UpdateProducts(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
@@ -198,7 +198,7 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 // @Success 204 {object} nil
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /produtos/{id}/inativar [patch]
+// @Router /products/inativar/{id} [patch]
 func (pc *productController) InactivateProduct(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL
 	id := ctx.Param("id")
@@ -232,7 +232,7 @@ func (pc *productController) InactivateProduct(ctx echo.Context) error {
 // @Success 204 {object} nil
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /produtos/{id}/ativar [patch]
+// @Router /products/ativar/{id} [patch]
 func (pc *productController) ActivateProduct(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL
 	id := ctx.Param("id")

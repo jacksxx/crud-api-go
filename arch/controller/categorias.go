@@ -48,7 +48,7 @@ func NewCategoriaController(service service.CategoriaService, validate *validato
 // @Success 200 {object} model.WebResponse{data=[]model.Categorias}
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /categorias [get]
+// @Router /categories [get]
 func (cc *categoriaController) GetCategorias(ctx echo.Context) error {
 	filters := model.CategoriasFilters{}
 
@@ -76,7 +76,7 @@ func (cc *categoriaController) GetCategorias(ctx echo.Context) error {
 // @Failure 400 {object} model.WebResponse
 // @Failure 404 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /categorias/{id} [get]
+// @Router /categories/{id} [get]
 func (cc *categoriaController) GetCategoriaByID(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -105,7 +105,7 @@ func (cc *categoriaController) GetCategoriaByID(ctx echo.Context) error {
 // @Param categoria body model.CategoriasPost true "Dados da nova categoria"
 // @Success 201 {object} model.WebResponse{data=model.Categorias}
 // @Failure 400 {object} model.WebResponse
-// @Router /categorias [post]
+// @Router /categories [post]
 func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 
 	categoria := model.CategoriasPost{}
@@ -135,7 +135,7 @@ func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 // @Failure 400 {object} model.WebResponse
 // @Failure 404 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /categorias/{id} [patch]
+// @Router /categories/{id} [patch]
 func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -175,7 +175,7 @@ func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 // @Success 204 {object} nil
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /categorias/{id}/inativar [patch]
+// @Router /categories/inativar/{id} [patch]
 func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -207,7 +207,7 @@ func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 // @Success 204 {object} nil
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /categorias/{id}/ativar [patch]
+// @Router /categories/ativar/{id} [patch]
 func (cc *categoriaController) ActivateCategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {

@@ -51,7 +51,7 @@ func NewSubcategoriaController(service service.SubcategoriasService, validate *v
 // @Success      200     {object}  model.WebResponse{data=[]model.Subcategorias}
 // @Failure      400     {object}  model.WebResponse
 // @Failure      500     {object}  model.WebResponse
-// @Router       /subcategorias [get]
+// @Router       /subcategories [get]
 func (c *subcategoriaController) GetSubcategorias(ctx echo.Context) error {
 	filters := model.SubcategoriasFilters{}
 
@@ -77,7 +77,7 @@ func (c *subcategoriaController) GetSubcategorias(ctx echo.Context) error {
 // @Success 200 {object} model.WebResponse{data=model.Subcategorias}
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /subcategorias/{id} [get]
+// @Router /subcategories/{id} [get]
 func (c *subcategoriaController) GetSubcategoriaByID(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -105,7 +105,7 @@ func (c *subcategoriaController) GetSubcategoriaByID(ctx echo.Context) error {
 // @Param subcategoria body model.SubcategoriasPost true "Dados da Subcategoria"
 // @Success 201 {object} model.WebResponse{data=model.Subcategorias}
 // @Failure 400 {object} model.WebResponse
-// @Router /subcategorias [post]
+// @Router /subcategories [post]
 func (c *subcategoriaController) CreateSubcategoria(ctx echo.Context) error {
 
 	subcategoria := model.SubcategoriasPost{}
@@ -133,7 +133,7 @@ func (c *subcategoriaController) CreateSubcategoria(ctx echo.Context) error {
 // @Success 200 {object} model.WebResponse{data=model.Subcategorias}
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /subcategorias/{id} [patch]
+// @Router /subcategories/{id} [patch]
 func (c *subcategoriaController) UpdateSubcategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -172,7 +172,7 @@ func (c *subcategoriaController) UpdateSubcategorias(ctx echo.Context) error {
 // @Success 204 {object} model.WebResponse
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /subcategorias/{id}/inativar [patch]
+// @Router /subcategories/inativar/{id} [patch]
 func (c *subcategoriaController) InactivateSubcategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -203,7 +203,7 @@ func (c *subcategoriaController) InactivateSubcategorias(ctx echo.Context) error
 // @Success 204 {object} model.WebResponse
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
-// @Router /subcategorias/{id}/ativar [patch]
+// @Router /subcategories/ativar/{id} [patch]
 func (c *subcategoriaController) ActivateSubcategorias(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {

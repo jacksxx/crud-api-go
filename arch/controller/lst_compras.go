@@ -35,6 +35,20 @@ func NewLstComprasController(service service.LstComprasService, validate *valida
 	}
 }
 
+// GetLstCompras godoc
+// @Summary      Lista todas as compras
+// @Description  Retorna uma lista de compras com base nos filtros fornecidos
+// @Tags         Compras
+// @Accept       json
+// @Produce      json
+// @Param        nome           query     string  false  "Nome da compra"
+// @Param        status_codigo  query     int     false  "Código do status"
+// @Param        limit          query     int     true   "Limite de itens por página (mínimo: 1)"
+// @Param        page           query     int     true   "Número da página (mínimo: 1)"
+// @Success      200  {object}  model.WebResponse{data=[]model.LstCompras}
+// @Failure      400  {object}  model.WebResponse
+// @Failure      500  {object}  model.WebResponse
+// @Router       /lst_compras [get]
 func (c *lstComprasController) GetLstCompras(ctx echo.Context) error {
 	filters := model.LstCompras_Filters{}
 
@@ -52,6 +66,17 @@ func (c *lstComprasController) GetLstCompras(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, Itens)
 }
 
+// GetLstComprasById godoc
+// @Summary      Buscar uma compra por ID
+// @Description  Retorna uma compra específica com base no ID informado
+// @Tags         lstcompras
+// @Accept       json
+// @Produce      json
+// @Param        id  path      int  true  "ID da Compra"
+// @Success      200  {object}  model.WebResponse{data=model.LstCompras}
+// @Failure      404  {object}  model.WebResponse
+// @Failure      500  {object}  model.WebResponse
+// @Router       /lst_compras/{id} [get]
 func (c *lstComprasController) GetLstComprasByCodigo(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -68,6 +93,17 @@ func (c *lstComprasController) GetLstComprasByCodigo(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, aluguel, nil)
 }
 
+// CreateLstCompras godoc
+// @Summary Cria uma nova lista de compras
+// @Description Cria uma nova lista de compras com os dados fornecidos
+// @Tags Listas de Compras
+// @Accept json
+// @Produce json
+// @Param body body model.LstCompras_Post true "Dados para criação da lista de compras"
+// @Success 200 {object} model.WebResponse{data=model.LstCompras_Post}
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /lst_compras [post]
 func (c *lstComprasController) PostLstCompras(ctx echo.Context) error {
 	compras := model.LstCompras_Post{}
 
@@ -83,6 +119,18 @@ func (c *lstComprasController) PostLstCompras(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, comprasCriada, nil)
 }
 
+// UpdateLstCompras godoc
+// @Summary Atualiza uma lista de compras existente
+// @Description Atualiza uma lista de compras, mantendo total de itens e valor total intactos
+// @Tags Listas de Compras
+// @Accept json
+// @Produce json
+// @Param body body model.LstCompras_Update true "Dados para atualização da lista de compras"
+// @Success 200 {object} model.WebResponse{data=model.LstCompras_Update}
+// @Failure 400 {object} model.WebResponse
+// @Failure 404 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /lst_compras/{id} [patch]
 func (c *lstComprasController) UpdateLstCompras(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
@@ -118,6 +166,17 @@ func (c *lstComprasController) UpdateLstCompras(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedProduct, nil)
 }
 
+// FinishLstCompras godoc
+// @Summary Finaliza uma lista de compras
+// @Description Atualiza o status da lista de compras para "Finalizado"
+// @Tags Listas de Compras
+// @Accept json
+// @Produce json
+// @Param request body model.LstCompras_Finish true "Dados da lista de compras a ser finalizada"
+// @Success 200 {object} model.WebResponse{data=model.LstCompras_Finish}
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /lst_compras/{id}/finalizar [patch]
 func (c *lstComprasController) FinishLstCompras(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
@@ -153,6 +212,17 @@ func (c *lstComprasController) FinishLstCompras(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, finishedLst, nil)
 }
 
+// CancelLstCompras godoc
+// @Summary Cancela uma lista de compras
+// @Description Atualiza o status da lista de compras para "Cancelado"
+// @Tags Listas de Compras
+// @Accept json
+// @Produce json
+// @Param request body model.LstCompras_Cancel true "ID da lista de compras a ser cancelada"
+// @Success 200 {object} model.WebResponse
+// @Failure 400 {object} model.WebResponse
+// @Failure 500 {object} model.WebResponse
+// @Router /lst_compras/cancel/{id} [patch]
 func (c *lstComprasController) CancelLstCompras(ctx echo.Context) error {
 	// Obtém o ID do produto a partir dos parâmetros da URL.
 	id := ctx.Param("id")
