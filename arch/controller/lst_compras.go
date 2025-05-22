@@ -35,7 +35,7 @@ func NewLstComprasController(service service.LstComprasService, validate *valida
 	}
 }
 
-// GetLstCompras godoc
+// GetLstCompras
 // @Summary      Lista todas as compras
 // @Description  Retorna uma lista de compras com base nos filtros fornecidos
 // @Tags         Listas de Compras
@@ -66,7 +66,7 @@ func (c *lstComprasController) GetLstCompras(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, Itens)
 }
 
-// GetLstComprasById godoc
+// GetLstComprasById
 // @Summary      Buscar uma compra por ID
 // @Description  Retorna uma compra específica com base no ID informado
 // @Tags         Listas de Compras
@@ -93,7 +93,7 @@ func (c *lstComprasController) GetLstComprasByCodigo(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, aluguel, nil)
 }
 
-// CreateLstCompras godoc
+// CreateLstCompras
 // @Summary Cria uma nova lista de compras
 // @Description Cria uma nova lista de compras com os dados fornecidos
 // @Tags Listas de Compras
@@ -119,7 +119,7 @@ func (c *lstComprasController) PostLstCompras(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, comprasCriada, nil)
 }
 
-// UpdateLstCompras godoc
+// UpdateLstCompras
 // @Summary Atualiza uma lista de compras existente
 // @Description Atualiza uma lista de compras, mantendo total de itens e valor total intactos
 // @Tags Listas de Compras
@@ -166,7 +166,7 @@ func (c *lstComprasController) UpdateLstCompras(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedProduct, nil)
 }
 
-// FinishLstCompras godoc
+// FinishLstCompras
 // @Summary Finaliza uma lista de compras
 // @Description Atualiza o status da lista de compras para "Finalizado"
 // @Tags Listas de Compras
@@ -212,7 +212,7 @@ func (c *lstComprasController) FinishLstCompras(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, finishedLst, nil)
 }
 
-// CancelLstCompras godoc
+// CancelLstCompras
 // @Summary Cancela uma lista de compras
 // @Description Atualiza o status da lista de compras para "Cancelado"
 // @Tags Listas de Compras

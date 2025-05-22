@@ -73,7 +73,7 @@ func (p *productController) GetProducts(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, products)
 }
 
-// GetProductByID godoc
+// GetProductByID
 // @Summary Obtém um produto pelo ID
 // @Description Retorna os detalhes de um produto específico
 // @Tags Produtos
@@ -107,7 +107,7 @@ func (pc *productController) GetProductByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, product, nil)
 }
 
-// CreateProduct godoc
+// CreateProduct
 // @Summary Cria um novo produto
 // @Description Insere um novo produto no banco de dados
 // @Tags Produtos
@@ -138,7 +138,7 @@ func (pc *productController) CreateProducts(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, insertedProduct, nil)
 }
 
-// UpdateProduct godoc
+// UpdateProduct
 // @Summary Atualiza um produto existente
 // @Description Atualiza os dados de um produto no banco de dados
 // @Tags Produtos
@@ -188,7 +188,7 @@ func (pc *productController) UpdateProducts(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedProduct, nil)
 }
 
-// InactivateProducts godoc
+// InactivateProducts
 // @Summary Inativa um produto
 // @Description Define data_inativacao e status como inativo para o produto
 // @Tags Produtos
@@ -222,7 +222,7 @@ func (pc *productController) InactivateProduct(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }
 
-// ActivateProducts godoc
+// ActivateProducts
 // @Summary Ativa um produto
 // @Description Remove a data_inativacao e define status como ativo
 // @Tags Produtos

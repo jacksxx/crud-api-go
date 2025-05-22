@@ -3,21 +3,39 @@ CREATE SCHEMA IF NOT EXISTS prod;
 SET
     timezone = 'America/Bahia';
 
--- -- Função para atualizar a data de modificação (data_atualizacao)
--- CREATE OR REPLACE FUNCTION atualizar_data_atualizacao() 
--- RETURNS TRIGGER AS $$
--- BEGIN
---     -- Atualiza a data de modificação apenas para tabelas que têm a coluna *_data_atualizacao
---     IF TG_TABLE_NAME = 'prod.categorias' THEN
---         NEW.categorias_data_atualizacao := CURRENT_TIMESTAMP;
---     ELSIF TG_TABLE_NAME = 'prod.products' THEN
---         NEW.products_data_atualizacao := CURRENT_TIMESTAMP;
---     -- Adicione mais condições para outras tabelas conforme necessário
---     END IF;
---     RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
+CREATE TABLE 
+    IF NOT EXISTS prod.perfis(
+    id SERIAL PRIMARY KEY,
+    perfil VARCHAR(255) NOT NULL
+);
 
+CREATE TABLE 
+    IF NOT EXISTS prod.usuarios(
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    usuario VARCHAR(255) NOT NULL,
+    email VARCHAR(250) NOT NULL,
+    senha VARCHAR(40) NOT NULL,
+    salt VARCHAR(70) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT true,
+    data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    data_atualizacao TIMESTAMP NULL,
+    data_inativação TIMESTAMP NULL,
+);
+
+INSERT INTO prod.usuarios(
+    nome,
+    usuario,
+    email,
+    senha,
+    salt,
+) VALUES (
+    'admin',
+    'admin',
+    'admin@example.com',
+    '$2a$10$HnClX61FTm9i110IVXZubeAKD1ZcTHBdcrP/pgOrwT7RrXtQRzcIO',
+    'YzkwVOZQhdLXRdX+I1k2PW0J13uIRTfKDbxbyhE7Xgk=',
+);
 
 CREATE TABLE
     IF NOT EXISTS prod.categorias (
@@ -311,20 +329,3 @@ BEGIN
     PERFORM setval('prod.lst_compras_itens_lst_compras_itens_id_seq', COALESCE((SELECT MAX(lst_compras_itens_id) FROM prod.lst_compras_itens), 1), true);
 END;
 $$;
-
--- -- Trigger para a tabela prod.categorias
--- CREATE TRIGGER atualizar_categoria BEFORE
--- UPDATE ON prod.categorias FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao ();
-
--- -- Trigger para a tabela prod.products
--- CREATE TRIGGER atualizar_product BEFORE
--- UPDATE ON prod.products FOR EACH ROW EXECUTE FUNCTION atualizar_data_atualizacao ();
-
--- Reset de sequences para o schema prod
--- SELECT setval('prod.categorias_categorias_id_seq', COALESCE((SELECT MAX(categorias_id) FROM prod.categorias), 1), true);
--- SELECT setval('prod.subcategorias_subcategorias_id_seq', COALESCE((SELECT MAX(subcategorias_id) FROM prod.subcategorias), 1), true);
--- SELECT setval('prod.unidades_unidade_id_seq', COALESCE((SELECT MAX(unidade_id) FROM prod.unidades), 1), true);
--- SELECT setval('prod.products_products_id_seq', COALESCE((SELECT MAX(products_id) FROM prod.products), 1), true);
--- SELECT setval('prod.lst_compras_status_lst_compras_status_id_seq', COALESCE((SELECT MAX(lst_compras_status_id) FROM prod.lst_compras_status), 1), true);
--- SELECT setval('prod.lst_compras_lst_compras_id_seq', COALESCE((SELECT MAX(lst_compras_id) FROM prod.lst_compras), 1), true);
--- SELECT setval('prod.lst_compras_itens_lst_compras_itens_id_seq', COALESCE((SELECT MAX(lst_compras_itens_id) FROM prod.lst_compras_itens), 1), true);

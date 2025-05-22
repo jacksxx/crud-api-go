@@ -35,7 +35,7 @@ func NewCategoriaController(service service.CategoriaService, validate *validato
 	}
 }
 
-// GetCategorias godoc
+// GetCategorias
 // @Summary Lista categorias com filtros
 // @Description Retorna uma lista de categorias com filtros opcionais por nome e status
 // @Tags Categorias
@@ -65,7 +65,7 @@ func (cc *categoriaController) GetCategorias(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, categorias)
 }
 
-// GetCategoriaByID godoc
+// GetCategoriaByID
 // @Summary Busca uma categoria por ID
 // @Description Retorna os dados de uma categoria específica
 // @Tags Categorias
@@ -96,7 +96,7 @@ func (cc *categoriaController) GetCategoriaByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, categoria, nil)
 }
 
-// CreateCategoria godoc
+// CreateCategoria
 // @Summary Cria uma nova categoria
 // @Description Cria uma nova categoria no sistema
 // @Tags Categorias
@@ -123,7 +123,7 @@ func (cc *categoriaController) CreateCategoria(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, insertedCategories, nil)
 }
 
-// UpdateCategorias godoc
+// UpdateCategorias
 // @Summary Atualiza uma categoria existente
 // @Description Atualiza os dados de uma categoria com base no ID
 // @Tags Categorias
@@ -165,7 +165,7 @@ func (cc *categoriaController) UpdateCategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedCategoty, nil)
 }
 
-// InactivateCategorias godoc
+// InactivateCategorias
 // @Summary Inativa uma categoria
 // @Description Define data_inativacao e status como inativo para a categoria
 // @Tags Categorias
@@ -197,7 +197,7 @@ func (cc *categoriaController) InactivateCategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }
 
-// ActivateCategorias godoc
+// ActivateCategorias
 // @Summary Ativa uma categoria
 // @Description Remove a data_inativacao e define status como ativo
 // @Tags Categorias

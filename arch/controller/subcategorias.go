@@ -37,7 +37,7 @@ func NewSubcategoriaController(service service.SubcategoriasService, validate *v
 	}
 }
 
-// GetSubcategorias godoc
+// GetSubcategorias
 // @Summary      Lista Subcategorias
 // @Description  Retorna uma lista de subcategorias com suporte a filtros por nome e status.
 // @Tags         Subcategorias
@@ -68,7 +68,7 @@ func (c *subcategoriaController) GetSubcategorias(ctx echo.Context) error {
 	return helper.SuccessResponse(ctx, subcategorias)
 }
 
-// GetSubcategoriaByID godoc
+// GetSubcategoriaByID
 // @Summary Busca uma subcategoria pelo ID
 // @Tags Subcategorias
 // @Accept json
@@ -97,7 +97,7 @@ func (c *subcategoriaController) GetSubcategoriaByID(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, subcategoria, nil)
 }
 
-// CreateSubcategoria godoc
+// CreateSubcategoria
 // @Summary Cria uma nova subcategoria
 // @Tags Subcategorias
 // @Accept json
@@ -123,7 +123,7 @@ func (c *subcategoriaController) CreateSubcategoria(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, insertedSubcategories, nil)
 }
 
-// UpdateSubcategorias godoc
+// UpdateSubcategorias
 // @Summary Atualiza uma subcategoria existente
 // @Tags Subcategorias
 // @Accept json
@@ -163,7 +163,7 @@ func (c *subcategoriaController) UpdateSubcategorias(ctx echo.Context) error {
 	return helper.BuildResponse(ctx, httpStatus, updatedSubcategoty, nil)
 }
 
-// InactivateSubcategorias godoc
+// InactivateSubcategorias
 // @Summary Inativa uma subcategoria
 // @Tags Subcategorias
 // @Accept json
@@ -194,7 +194,7 @@ func (c *subcategoriaController) InactivateSubcategorias(ctx echo.Context) error
 	return helper.BuildResponse(ctx, http.StatusNoContent, nil, nil)
 }
 
-// ActivateSubcategorias godoc
+// ActivateSubcategorias
 // @Summary Ativa uma subcategoria
 // @Tags Subcategorias
 // @Accept json

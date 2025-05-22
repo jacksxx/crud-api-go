@@ -29,7 +29,7 @@ func NewLstComprasItensController(service service.LstComprasItensService, valida
 	}
 }
 
-// GetLstComprasItens godoc
+// GetLstComprasItens
 // @Summary Lista os itens de uma lista de compras
 // @Description Retorna os itens agrupados por lista e por status (Comprados / Não Comprados)
 // @Tags Itens da Lista de Compras
