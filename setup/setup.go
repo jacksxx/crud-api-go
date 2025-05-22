@@ -23,6 +23,11 @@ func InitApp(server *echo.Echo, dbConnection *sql.DB) {
 	baseRouter := "/api/v1"
 
 	// Inicializa repositórios, serviços e controllers
+	UserRepository := repository.NewUsuarioRepository(dbConnection)
+	UserService := service.NewUsuarioService(UserRepository)
+	UserController := controller.NewUsuarioController(UserService, validate, translator)
+	router.UsuarioRouter(server, baseRouter+"/users", UserController)
+
 	CategoryRepository := repository.NewCategoriasRepository(dbConnection)
 	CategoryService := service.NewCategoriaService(CategoryRepository)
 	CategoryController := controller.NewCategoriaController(CategoryService, validate, translator)

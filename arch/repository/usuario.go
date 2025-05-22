@@ -39,8 +39,8 @@ func (r *usuarioRepository) BeginTransaction() (*sql.Tx, error) {
 
 func (r *usuarioRepository) GetUsuarios(filters model.UsuarioFilter) ([]model.Usuario, error) {
 	query := `
-		SELECT id, nome, usuario, email, ativo, data_cadastro, data_atualizacao, data_inativo
-        FROM prod.usuario
+		SELECT id, nome, usuario, email, ativo, data_cadastro, data_atualizacao, data_inativacao
+        FROM prod.usuarios
 	`
 	var conditions []string
 	var args []interface{}
@@ -73,7 +73,7 @@ func (r *usuarioRepository) GetUsuarios(filters model.UsuarioFilter) ([]model.Us
 	var usuariosList []model.Usuario
 	for rows.Next() {
 		var usuario model.Usuario
-		if err := rows.Scan(&usuario.Id, &usuario.Nome, &usuario.Usuario, &usuario.Ativo, &usuario.DataCadastro, &usuario.DataAtualizacao, &usuario.DataInativo); err != nil {
+		if err := rows.Scan(&usuario.Id, &usuario.Nome, &usuario.Usuario, &usuario.Email, &usuario.Ativo, &usuario.DataCadastro, &usuario.DataAtualizacao, &usuario.DataInativo); err != nil {
 			return nil, err
 		}
 		usuariosList = append(usuariosList, usuario)
@@ -84,8 +84,8 @@ func (r *usuarioRepository) GetUsuarios(filters model.UsuarioFilter) ([]model.Us
 
 func (r *usuarioRepository) GetUsuariosById(id int) (model.Usuario, error) {
 	query, err := r.connection.Prepare(`
-		SELECT id, nome, usuario, email, ativo, data_cadastro, data_atualizacao, data_inativo
-        FROM prod.usuario
+		SELECT id, nome, usuario, email, ativo, data_cadastro, data_atualizacao, data_inativacao
+        FROM prod.usuarios
 		WHERE id = $1
 	`)
 	if err != nil {
@@ -96,7 +96,7 @@ func (r *usuarioRepository) GetUsuariosById(id int) (model.Usuario, error) {
 
 	var usuario model.Usuario
 
-	err = query.QueryRow(id).Scan(&usuario.Id, &usuario.Nome, &usuario.Usuario, &usuario.Ativo, &usuario.DataCadastro, &usuario.DataAtualizacao, &usuario.DataInativo)
+	err = query.QueryRow(id).Scan(&usuario.Id, &usuario.Nome, &usuario.Usuario, &usuario.Email, &usuario.Ativo, &usuario.DataCadastro, &usuario.DataAtualizacao, &usuario.DataInativo)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -114,7 +114,7 @@ func (r *usuarioRepository) GetUsuariosById(id int) (model.Usuario, error) {
 func (r *usuarioRepository) CreateUsuario(tx *sql.Tx, usuario model.UsuarioPost, hash string, salt string) (model.UsuarioPost, error) {
 	var Id int
 	query, err := tx.Prepare(`
-	INSERT INTO prod.usuario (nome, usuario, email, senha, salt) 
+	INSERT INTO prod.usuarios (nome, usuario, email, senha, salt) 
 	VALUES ($1, $2, $3, $4, $5)
 	RETURNING id`)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *usuarioRepository) CreateUsuario(tx *sql.Tx, usuario model.UsuarioPost,
 
 func (r *usuarioRepository) UpdateUsuario(tx *sql.Tx, usuario model.UsuarioUpdate) (model.UsuarioUpdate, error) {
 	query, err := tx.Prepare(`
-		UPDATE prod.usuario 
+		UPDATE prod.usuarios 
 		SET nome = $1, usuario = $2, email = $3, data_atualizacao = CURRENT_TIMESTAMP
 		WHERE id = $4
 		RETURNING id`)
@@ -154,8 +154,8 @@ func (r *usuarioRepository) UpdateUsuario(tx *sql.Tx, usuario model.UsuarioUpdat
 
 func (r *usuarioRepository) InativarUsuario(id int, tx *sql.Tx) error {
 	query := `
-		UPDATE prod.usuario 
-		SET data_inativo = CURRENT_TIMESTAMP, ativo = false 
+		UPDATE prod.usuarios 
+		SET data_inativacao = CURRENT_TIMESTAMP, ativo = false 
 		WHERE id = $1
 	`
 
@@ -170,8 +170,8 @@ func (r *usuarioRepository) InativarUsuario(id int, tx *sql.Tx) error {
 
 func (r *usuarioRepository) AtivarUsuario(id int, tx *sql.Tx) error {
 	query := `
-		UPDATE prod.usuario 
-		SET data_inativo = NULL, ativo = true 
+		UPDATE prod.usuarios 
+		SET data_inativacao = NULL, ativo = true 
 		WHERE id = $1
 	`
 
@@ -186,7 +186,7 @@ func (r *usuarioRepository) AtivarUsuario(id int, tx *sql.Tx) error {
 
 func (pr *usuarioRepository) UpdateSenha(id int, hash string, salt string, tx *sql.Tx) error {
 	query := `
-		UPDATE prod.usuario 
+		UPDATE prod.usuarios 
 		SET senha = $1, salt = $2 WHERE id = $3	`
 
 	_, err := tx.Exec(query, hash, salt, id)
@@ -194,7 +194,7 @@ func (pr *usuarioRepository) UpdateSenha(id int, hash string, salt string, tx *s
 }
 
 func (r *usuarioRepository) CountUsuario(filters model.UsuarioFilter) (int, error) {
-	query := `SELECT COUNT(*) FROM prod.usuario`
+	query := `SELECT COUNT(*) FROM prod.usuarios`
 	var conditions []string
 	var args []interface{}
 	argIndex := 1
@@ -222,7 +222,7 @@ func (r *usuarioRepository) CountUsuario(filters model.UsuarioFilter) (int, erro
 // CHECKEMAIL
 // Se for false, não há email - Caso true, há email
 func (r *usuarioRepository) CheckEmail(email string, tx *sql.Tx, usuarioId *int) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM prod.usuario WHERE email = $1)`
+	query := `SELECT EXISTS(SELECT 1 FROM prod.usuarios WHERE email = $1)`
 	args := []interface{}{email}
 	if usuarioId != nil {
 		query += ` AND usuario_id <> $2`
@@ -240,7 +240,7 @@ func (r *usuarioRepository) CheckEmail(email string, tx *sql.Tx, usuarioId *int)
 // Se for false, não há usuario - Caso true, há usuario
 func (r *usuarioRepository) CheckUsuario(usuario string, tx *sql.Tx, usuarioId *int) (bool, error) {
 
-	query := `SELECT EXISTS(SELECT 1 FROM prod.usuario WHERE usuario = $1)`
+	query := `SELECT EXISTS(SELECT 1 FROM prod.usuarios WHERE usuario = $1)`
 	args := []interface{}{usuario}
 
 	if usuarioId != nil {
@@ -259,7 +259,7 @@ func (r *usuarioRepository) CheckUsuario(usuario string, tx *sql.Tx, usuarioId *
 // CheckUsuarioAtivo
 // Se for false, usuário não está ativo - Caso true, usuário está ativo.
 func (r *usuarioRepository) CheckUsuarioAtivo(id int, tx *sql.Tx) (bool, error) {
-	query := `SELECT ativo FROM prod.usuario WHERE id = $1`
+	query := `SELECT ativo FROM prod.usuarios WHERE id = $1`
 	var ativo bool
 	err := tx.QueryRow(query, id).Scan(&ativo)
 	if err != nil {
@@ -269,7 +269,7 @@ func (r *usuarioRepository) CheckUsuarioAtivo(id int, tx *sql.Tx) (bool, error) 
 }
 
 func (r *usuarioRepository) GetSenhaNSalt(id int, tx *sql.Tx) (string, string, error) {
-	query := `SELECT senha, salt FROM prod.usuario WHERE id = $1`
+	query := `SELECT senha, salt FROM prod.usuarios WHERE id = $1`
 	var hash string
 	var salt string
 

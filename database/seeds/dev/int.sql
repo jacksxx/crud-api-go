@@ -4,37 +4,31 @@ SET
     timezone = 'America/Bahia';
 
 CREATE TABLE 
-    IF NOT EXISTS prod.perfis(
-    id SERIAL PRIMARY KEY,
-    perfil VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE 
-    IF NOT EXISTS prod.usuarios(
+    IF NOT EXISTS prod.usuarios (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     usuario VARCHAR(255) NOT NULL,
     email VARCHAR(250) NOT NULL,
-    senha VARCHAR(40) NOT NULL,
-    salt VARCHAR(70) NOT NULL,
+    senha VARCHAR(100) NOT NULL,
+    salt VARCHAR(100) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT true,
     data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     data_atualizacao TIMESTAMP NULL,
-    data_inativação TIMESTAMP NULL,
+    data_inativacao TIMESTAMP NULL
 );
 
-INSERT INTO prod.usuarios(
+INSERT INTO prod.usuarios (
     nome,
     usuario,
     email,
     senha,
-    salt,
+    salt
 ) VALUES (
     'admin',
     'admin',
     'admin@example.com',
     '$2a$10$HnClX61FTm9i110IVXZubeAKD1ZcTHBdcrP/pgOrwT7RrXtQRzcIO',
-    'YzkwVOZQhdLXRdX+I1k2PW0J13uIRTfKDbxbyhE7Xgk=',
+    'YzkwVOZQhdLXRdX+I1k2PW0J13uIRTfKDbxbyhE7Xgk='
 );
 
 CREATE TABLE

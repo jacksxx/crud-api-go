@@ -13,6 +13,14 @@ import (
 )
 
 type UsuarioController interface {
+	GetUsuario(ctx echo.Context) error
+	GetUsuarioById(ctx echo.Context) error
+	CreateUsuario(ctx echo.Context) error
+	UpdateUsuario(ctx echo.Context) error
+	InactivateUsuario(ctx echo.Context) error
+	ActivateUsuario(ctx echo.Context) error
+	AtualizarSenha(ctx echo.Context) error
+	ResetarSenha(ctx echo.Context) error
 }
 
 type usuarioController struct {
@@ -178,7 +186,7 @@ func (c *usuarioController) UpdateUsuario(ctx echo.Context) error {
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
 // @Router /users/inativar/{id} [patch]
-func (c *usuarioController) InactivateCategorias(ctx echo.Context) error {
+func (c *usuarioController) InactivateUsuario(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
@@ -206,7 +214,7 @@ func (c *usuarioController) InactivateCategorias(ctx echo.Context) error {
 // @Failure 400 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
 // @Router /users/ativar/{id} [patch]
-func (c *usuarioController) ActivateCategorias(ctx echo.Context) error {
+func (c *usuarioController) ActivateUsuario(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
 		return helper.BuildResponse(ctx, http.StatusBadRequest, nil, []string{"Id não pode ser nulo"})
@@ -236,7 +244,7 @@ func (c *usuarioController) ActivateCategorias(ctx echo.Context) error {
 // @Failure 400 {object} model.WebResponse "Erro na validação dos dados"
 // @Failure 401 {object} model.WebResponse "Usuário não autorizado"
 // @Failure 404 {object} model.WebResponse "Usuário não encontrado"
-// @Router /users/senha/{id} [patch]
+// @Router /users/password/{id} [patch]
 func (c *usuarioController) AtualizarSenha(ctx echo.Context) error {
 	id := ctx.Param("id")
 	if id == "" {
@@ -277,7 +285,7 @@ func (c *usuarioController) AtualizarSenha(ctx echo.Context) error {
 // @Produce json
 // @Param codigo path int true "Código do usuário"
 // @Success 200 {object} model.WebResponse
-// @Failure 404 {object} model.WebResponse 
+// @Failure 404 {object} model.WebResponse
 // @Failure 500 {object} model.WebResponse
 // @Router /users/resetpassword/{id} [patch]
 func (c *usuarioController) ResetarSenha(ctx echo.Context) error {
@@ -295,6 +303,6 @@ func (c *usuarioController) ResetarSenha(ctx echo.Context) error {
 	if err != nil {
 		return helper.BuildResponse(ctx, httpStatus, nil, []string{err.Error()})
 	}
-	
+
 	return helper.BuildResponse(ctx, httpStatus, nil, nil)
 }

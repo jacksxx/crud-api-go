@@ -16,7 +16,7 @@ type Usuario struct {
 	Ativo           bool       `db:"ativo" json:"ativo" validate:"required"`
 	DataCadastro    time.Time  `db:"data_cadastro" json:"data_cadastro"`
 	DataAtualizacao *time.Time `db:"data_atualizacao" json:"data_atualizacao"`
-	DataInativo     *time.Time `db:"data_inativo" json:"data_inativo"`
+	DataInativo     *time.Time `db:"data_inativacao" json:"data_inativacao"`
 }
 
 type UsuarioPost struct {
