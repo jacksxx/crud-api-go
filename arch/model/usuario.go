@@ -25,7 +25,14 @@ type UsuarioPost struct {
 	Usuario string  `db:"usuario" json:"usuario" validate:"required,max=150"`
 	Email   string  `db:"email" json:"email" validate:"required,email,max=200"`
 	Senha   *string `db:"senha" json:"senha" validate:"required,omitempty,max=32"`
-	Salt    *string `db:"salt" json:"salt" validate:"required,omitempty,max=64"`
+	Salt    *string `db:"salt" json:"salt" validate:"omitempty,max=64"`
+}
+
+type UsuarioPostResponse struct {
+	Id      int    `db:"id" json:"id"`
+	Nome    string `db:"nome" json:"nome" validate:"required,max=250"`
+	Usuario string `db:"usuario" json:"usuario" validate:"required,max=150"`
+	Email   string `db:"email" json:"email" validate:"required,email,max=200"`
 }
 
 type UsuarioUpdate struct {
@@ -43,7 +50,7 @@ type UsuarioFilter struct {
 
 type SenhaUpdateRequest struct {
 	SenhaAntiga string `json:"senha_antiga" validate:"required,max=32"`
-	SenhaNova   string `json:"senha_nova" validate:"required,senha_complexa"`
+	SenhaNova   string `json:"senha_nova" validate:"required"`
 }
 
 func (u *UsuarioPost) Validate() []error {

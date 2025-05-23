@@ -12,7 +12,7 @@ import (
 type UsuarioService interface {
 	GetUsuarios(filters model.UsuarioFilter) (model.PaginatedResponse[model.Usuario], error)
 	GetUsuarioById(id int) (model.Usuario, int, error)
-	CreateUsuario(usuario model.UsuarioPost) (model.UsuarioPost, int, error)
+	CreateUsuario(usuario model.UsuarioPost) (model.UsuarioPostResponse, int, error)
 	UpdateUsuario(usuario model.UsuarioUpdate) (model.UsuarioUpdate, int, error)
 	InativarUsuario(id int) error
 	AtivarUsuario(id int) error
@@ -59,43 +59,49 @@ func (s *usuarioService) GetUsuarioById(id int) (model.Usuario, int, error) {
 	return usuario, http.StatusOK, nil
 }
 
-func (s *usuarioService) CreateUsuario(usuario model.UsuarioPost) (model.UsuarioPost, int, error) {
+func (s *usuarioService) CreateUsuario(usuario model.UsuarioPost) (model.UsuarioPostResponse, int, error) {
 	tx, err := s.repository.BeginTransaction()
 	if err != nil {
-		return model.UsuarioPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
+		return model.UsuarioPostResponse{}, http.StatusInternalServerError, fmt.Errorf("erro ao iniciar transação: %v", err)
 	}
 	defer tx.Rollback()
 
 	exists, err := s.repository.CheckEmail(usuario.Email, tx, nil)
 	if err != nil {
-		return model.UsuarioPost{}, http.StatusInternalServerError, err
+		return model.UsuarioPostResponse{}, http.StatusInternalServerError, err
 	}
 	if exists {
-		return model.UsuarioPost{}, http.StatusConflict, fmt.Errorf("já existe um usuário com esse email")
+		return model.UsuarioPostResponse{}, http.StatusConflict, fmt.Errorf("já existe um usuário com esse email")
 	}
 
 	exists, err = s.repository.CheckUsuario(usuario.Usuario, tx, nil)
 	if err != nil {
-		return model.UsuarioPost{}, http.StatusInternalServerError, err
+		return model.UsuarioPostResponse{}, http.StatusInternalServerError, err
 	}
 	if exists {
-		return model.UsuarioPost{}, http.StatusConflict, fmt.Errorf("já existe um usuário com esse nome de usuário")
+		return model.UsuarioPostResponse{}, http.StatusConflict, fmt.Errorf("já existe um usuário com esse nome de usuário")
 	}
 
 	hash, salt, err := helper.HashPassword(*usuario.Senha)
 	if err != nil {
-		return model.UsuarioPost{}, http.StatusInternalServerError, err
+		return model.UsuarioPostResponse{}, http.StatusInternalServerError, err
 	}
 
 	user, err := s.repository.CreateUsuario(tx, usuario, hash, salt)
 	if err != nil {
-		return model.UsuarioPost{}, http.StatusInternalServerError, err
+		return model.UsuarioPostResponse{}, http.StatusInternalServerError, err
 	}
-
+	userResponse := model.UsuarioPostResponse{
+		Id:      user.Id,
+		Nome:    user.Nome,
+		Usuario: user.Usuario,
+		Email:   user.Email,
+	}
+	
 	if err := tx.Commit(); err != nil {
-		return model.UsuarioPost{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
+		return model.UsuarioPostResponse{}, http.StatusInternalServerError, fmt.Errorf("erro ao confirmar transação: %v", err)
 	}
-	return user, http.StatusCreated, nil
+	return userResponse, http.StatusCreated, nil
 }
 
 func (s *usuarioService) UpdateUsuario(usuario model.UsuarioUpdate) (model.UsuarioUpdate, int, error) {

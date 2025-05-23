@@ -122,7 +122,7 @@ func (r *usuarioRepository) CreateUsuario(tx *sql.Tx, usuario model.UsuarioPost,
 	}
 	defer query.Close()
 
-	err = query.QueryRow(query, usuario.Nome, usuario.Usuario, usuario.Email, hash, salt).Scan(&Id)
+	err = query.QueryRow(usuario.Nome, usuario.Usuario, usuario.Email, hash, salt).Scan(&Id)
 	if err != nil {
 		return model.UsuarioPost{}, fmt.Errorf("erro ao criar usuário: %w", err)
 	}
@@ -222,33 +222,36 @@ func (r *usuarioRepository) CountUsuario(filters model.UsuarioFilter) (int, erro
 // CHECKEMAIL
 // Se for false, não há email - Caso true, há email
 func (r *usuarioRepository) CheckEmail(email string, tx *sql.Tx, usuarioId *int) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM prod.usuarios WHERE email = $1)`
+	query := `SELECT EXISTS(SELECT 1 FROM prod.usuarios WHERE email = $1`
 	args := []interface{}{email}
 	if usuarioId != nil {
-		query += ` AND usuario_id <> $2`
+		query += ` AND id <> $2`
 		args = append(args, *usuarioId)
 	}
+	query += `)`
+
 	var exists bool
-	err := tx.QueryRow(query, args...).Scan(exists)
+	err := tx.QueryRow(query, args...).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("erro ao checar email: %v", err)
 	}
+
 	return exists, nil
 }
 
 // CHECKUSUARIO
 // Se for false, não há usuario - Caso true, há usuario
 func (r *usuarioRepository) CheckUsuario(usuario string, tx *sql.Tx, usuarioId *int) (bool, error) {
-
-	query := `SELECT EXISTS(SELECT 1 FROM prod.usuarios WHERE usuario = $1)`
+	query := `SELECT EXISTS(SELECT 1 FROM prod.usuarios WHERE usuario = $1`
 	args := []interface{}{usuario}
-
 	if usuarioId != nil {
-		query += ` AND usuario_id <> $2`
+		query += ` AND id <> $2`
 		args = append(args, *usuarioId)
 	}
+	query += `)`
+
 	var exists bool
-	err := tx.QueryRow(query, args...).Scan(exists)
+	err := tx.QueryRow(query, args...).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("erro ao verificar existência do nome de usuário: %v", err)
 	}
