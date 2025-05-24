@@ -2,13 +2,14 @@ package router
 
 import (
 	"crud-api-go/arch/controller"
+	"crud-api-go/middleware"
 
 	"github.com/labstack/echo/v4"
 )
 
 func CategoriesRouter(ctx *echo.Echo, baseRouter string, categoriesController controller.CategoriaController) {
 
-	catRouter := ctx.Group(baseRouter)
+	catRouter := ctx.Group(baseRouter, middleware.AuthMiddleware())
 
 	catRouter.GET("", categoriesController.GetCategorias)
 	catRouter.GET("/:id", categoriesController.GetCategoriaByID)

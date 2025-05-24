@@ -2,13 +2,14 @@ package router
 
 import (
 	"crud-api-go/arch/controller"
+	"crud-api-go/middleware"
 
 	"github.com/labstack/echo/v4"
 )
 
 func UsuarioRouter(ctx *echo.Echo, baseRouter string, usersController controller.UsuarioController) {
 
-	userRouter := ctx.Group(baseRouter)
+	userRouter := ctx.Group(baseRouter, middleware.AuthMiddleware())
 
 	userRouter.GET("", usersController.GetUsuario)
 	userRouter.GET("/:id", usersController.GetUsuarioById)
