@@ -32,11 +32,16 @@ func main() {
 	}
 	defer dbConnection.Close()
 
-	helper.InitRedis()
+	// Conecta ao Redis com tratamento de erro
+	if err := helper.InitRedis(); err != nil {
+		panic(err)
+	}
+	// Finaliza o redis e o context
 	defer helper.RedisClient.Close()
+	defer helper.ShutdownRedis()
+
 	// Carrega a configuração do app
 	appConfig := config.GetAppConfig()
-
 	// Cria a instância do Echo
 	server := echo.New()
 
@@ -57,7 +62,7 @@ func main() {
 
 	var corsOrigins []string
 	if appConfig.AppEnv == "production" {
-		corsOrigins = []string{"..."}
+		corsOrigins = []string{appConfig.CorsOrigin}
 	} else {
 		corsOrigins = []string{"http://localhost:3000"}
 	}

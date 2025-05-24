@@ -1,18 +1,17 @@
 package helper
 
 import (
+	"crud-api-go/config"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
-	"crud-api-go/config"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/net/context"
 )
 
 // GenerateCSRFToken gera um token CSRF aleatório.
@@ -39,7 +38,7 @@ func StoreCSRFToken(userID int, token string, sessionID string) error {
 	// Armazenar o token CSRF no Redis com expiração configurada
 	expiration := time.Duration(appConfig.JWTRefreshHours) * time.Hour
 	key := fmt.Sprintf("csrf:%d:%s", userID, sessionID) // Formatar chave com ID numérico e sessionID
-	err := RedisClient.Set(context.Background(), key, token, expiration).Err()
+	err := RedisClient.Set(RedisCtx, key, token, expiration).Err()
 	if err != nil {
 		return err
 	}
@@ -50,7 +49,7 @@ func StoreCSRFToken(userID int, token string, sessionID string) error {
 func InvalidateCSRFToken(userID int, sessionID string) error {
 	// Deletar o token CSRF do Redis
 	key := fmt.Sprintf("csrf:%d:%s", userID, sessionID)
-	err := RedisClient.Del(context.Background(), key).Err()
+	err := RedisClient.Del(RedisCtx, key).Err()
 	if err != nil {
 		return err
 	}
@@ -60,7 +59,7 @@ func InvalidateCSRFToken(userID int, sessionID string) error {
 // RetrieveCSRFToken recupera o token CSRF associado ao ID do usuário do Redis.
 func RetrieveCSRFToken(userID int, sessionID string) (string, error) {
 	key := fmt.Sprintf("csrf:%d:%s", userID, sessionID)
-	token, err := RedisClient.Get(context.Background(), key).Result()
+	token, err := RedisClient.Get(RedisCtx, key).Result()
 	if err == redis.Nil {
 		return "", errors.New("token CSRF não encontrado")
 	}
@@ -85,7 +84,7 @@ func StoreRefreshToken(token string) error {
 	refreshTokenExpiry := time.Duration(appConfig.JWTRefreshHours) * time.Hour
 
 	// Armazenar o token de refresh no Redis com expiração configurada
-	err := RedisClient.Set(context.Background(), token, "valid", refreshTokenExpiry).Err()
+	err := RedisClient.Set(RedisCtx, token, "valid", refreshTokenExpiry).Err()
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func StoreRefreshToken(token string) error {
 
 // InvalidateRefreshToken invalida o token de refresh no Redis.
 func InvalidateRefreshToken(token string) error {
-	err := RedisClient.Del(context.Background(), token).Err()
+	err := RedisClient.Del(RedisCtx, token).Err()
 	if err != nil {
 		return err
 	}
@@ -142,7 +141,7 @@ func RemoveCSRFToken(c echo.Context) {
 // ListUserSessions retorna todas as sessões ativas de um usuário
 func ListUserSessions(userID int) ([]string, error) {
 	pattern := fmt.Sprintf("csrf:%d:*", userID)
-	keys, err := RedisClient.Keys(context.Background(), pattern).Result()
+	keys, err := RedisClient.Keys(RedisCtx, pattern).Result()
 	if err != nil {
 		return nil, err
 	}

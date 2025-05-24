@@ -8,6 +8,7 @@ import (
 
 	"github.com/joho/godotenv"
 )
+
 type DBConfig struct {
 	Host     string
 	Port     string
@@ -25,6 +26,7 @@ type AppConfig struct {
 	CookieDomain         string
 	SameSite             http.SameSite
 	RedisURL             string
+	CorsOrigin           string
 }
 
 func LoadConfig() {
@@ -51,6 +53,7 @@ func GetAppConfig() AppConfig {
 	expMinutes, _ := strconv.Atoi(getEnvOrFallback("JWT_EXPIRATION_MINUTES", "15"))
 	refreshHours, _ := strconv.Atoi(getEnvOrFallback("JWT_REFRESH_HOURS", "12"))
 	appEnv := getEnvOrFallback("APP_ENV", "development")
+	corsOrigins := getEnvOrFallback("CORS_ORIGIN", "")
 
 	// Configuração de Cookie baseada no ambiente
 	cookieDomain := getEnvOrFallback("COOKIE_DOMAIN", "")
@@ -60,7 +63,7 @@ func GetAppConfig() AppConfig {
 		sameSite = http.SameSiteNoneMode
 	}
 	// Configuração do Redis
-	redisURL := getEnvOrFallback("REDIS_URL", "redis://default@localhost:6379")	
+	redisURL := getEnvOrFallback("REDIS_URL", "redis://default@localhost:6379")
 
 	return AppConfig{
 		AppEnv:               appEnv,
@@ -70,6 +73,7 @@ func GetAppConfig() AppConfig {
 		CookieDomain:         cookieDomain,
 		SameSite:             sameSite,
 		RedisURL:             redisURL,
+		CorsOrigin:           corsOrigins,
 	}
 }
 
