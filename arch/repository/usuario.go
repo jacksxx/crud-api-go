@@ -21,6 +21,7 @@ type UsuarioRepository interface {
 	GetSenhaNSalt(id int, tx *sql.Tx) (string, string, error)
 	CountUsuario(filters model.UsuarioFilter) (int, error)
 	UpdateSenha(id int, hash string, salt string, tx *sql.Tx) error
+	GetUsuariosByUsername(username string) (model.Usuario, error)
 }
 
 type usuarioRepository struct {
@@ -107,6 +108,35 @@ func (r *usuarioRepository) GetUsuariosById(id int) (model.Usuario, error) {
 		return model.Usuario{}, err
 	}
 	fmt.Println("Usuário encontrado:", usuario)
+
+	return usuario, nil
+}
+
+func (r *usuarioRepository) GetUsuariosByUsername(username string) (model.Usuario, error) {
+	query, err := r.connection.Prepare(`
+		SELECT id, nome, usuario, email, ativo, data_cadastro, data_atualizacao, data_inativacao, senha, salt
+        FROM prod.usuarios
+		WHERE LOWER(usuario) = LOWER($1)
+	`)
+	if err != nil {
+		fmt.Println("Erro ao preparar consulta:", err)
+		return model.Usuario{}, err
+	}
+	defer query.Close()
+
+	var usuario model.Usuario
+
+	err = query.QueryRow(username).Scan(&usuario.Id, &usuario.Nome, &usuario.Usuario, &usuario.Email, &usuario.Ativo, &usuario.DataCadastro, &usuario.DataAtualizacao, &usuario.DataInativo, &usuario.Senha, &usuario.Salt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("Nenhum usuário encontrado com ID:", username)
+			return model.Usuario{}, nil
+		}
+		fmt.Println("Erro na consulta ao banco de dados:", err)
+		return model.Usuario{}, err
+	}
+	fmt.Println("Usuário encontrado:", usuario.Usuario)
 
 	return usuario, nil
 }

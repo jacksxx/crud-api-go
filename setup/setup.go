@@ -28,6 +28,11 @@ func InitApp(server *echo.Echo, dbConnection *sql.DB) {
 	UserController := controller.NewUsuarioController(UserService, validate, translator)
 	router.UsuarioRouter(server, baseRouter+"/users", UserController)
 
+	
+	AuthService := service.NewAuthService(UserRepository)
+	AuthController := controller.NewAuthController(AuthService, validate, translator)
+	router.AuthRoutes(server, baseRouter+"/auth", AuthController)
+
 	CategoryRepository := repository.NewCategoriasRepository(dbConnection)
 	CategoryService := service.NewCategoriaService(CategoryRepository)
 	CategoryController := controller.NewCategoriaController(CategoryService, validate, translator)
