@@ -31,11 +31,11 @@ func NewAuthService(userRepository repository.UsuarioRepository) AuthService {
 func (s *authService) Authenticate(c echo.Context, credentials model.LoginCredentials) (int, error) {
 	usernameLower := strings.ToLower(credentials.Username)
 	usuario, err := s.userRepository.GetUsuariosByUsername(usernameLower)
-	if usuario.Id == 0 {
-		return http.StatusNotFound, fmt.Errorf("usuário não encontrado")
-	}
 	if err != nil {
 		return http.StatusInternalServerError, err
+	}
+	if usuario.Id == 0 {
+		return http.StatusNotFound, fmt.Errorf("usuário não encontrado")
 	}
 
 	valid := helper.CheckPassword(*usuario.Senha, *usuario.Salt, credentials.Password)

@@ -7,7 +7,9 @@ import (
 )
 
 func AuthRoutes(e *echo.Echo, baseRouter string, controller controller.AuthController) {
-	e.POST(baseRouter+"/login", controller.Login)
-	e.POST(baseRouter+"/logout", controller.Logout)
-	e.POST(baseRouter+"/refresh", controller.Refresh)
+	authrouter := e.Group(baseRouter)
+
+	authrouter.POST("/login", controller.Login)
+	authrouter.POST("/logout", controller.Logout)
+	authrouter.POST("/refresh", controller.Refresh)
 }
