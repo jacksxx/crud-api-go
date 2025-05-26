@@ -77,7 +77,7 @@ func main() {
 	server.Use(middleware.LoggerMiddleware)
 	//swagger
 	server.GET("/swagger/*", echoSwagger.WrapHandler)
-	//Cria nova instancia de Validator
+	//Carrega app setup
 	setup.InitApp(server, dbConnection)
 
 	// Inicia o servidor na porta 8000

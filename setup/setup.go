@@ -13,6 +13,7 @@ import (
 )
 
 func InitApp(server *echo.Echo, dbConnection *sql.DB) {
+	// Cria nova instância do Validador
 	validate := validator.New()
 	// Cria nova instância do Universal Translator
 	ptLocale := pt_BR.New()

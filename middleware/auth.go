@@ -13,10 +13,10 @@ import (
 func AuthMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			env := config.GetAppConfig().AppEnv
-			if env == "developmentWithoutAuth" {
-				return next(c)
-			}
+			// env := config.GetAppConfig().AppEnv
+			// if env == "developmentWithoutAuth" {
+			// 	return next(c)
+			// }
 			// Obtenção do token do cookie
 			cookie, err := c.Cookie("token")
 			if err != nil {
